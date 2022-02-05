@@ -1,0 +1,25 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.20/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeCInformation.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeLanguageInformation.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakePackageConfigHelpers.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CheckCSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CheckLibraryExists.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Compiler/MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindThreads.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Internal/CheckSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Platform/Windows-MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Platform/Windows-MSVC.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/WriteBasicConfigVersionFile.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/CMake/modules/FindVulkan.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/CMakeLists.txt
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/cmake_uninstall.cmake.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/src/glfw3.pc.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/src/glfw3Config.cmake.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glfw/src/glfw_config.h.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/CMakeFiles/3.20.0-rc3/CMakeCCompiler.cmake

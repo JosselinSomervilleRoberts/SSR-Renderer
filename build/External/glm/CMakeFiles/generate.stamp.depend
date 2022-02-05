@@ -1,0 +1,10 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.20/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeParseArguments.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/WriteBasicConfigVersionFile.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/CMakeLists.txt
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/cmake/CMakePackageConfigHelpers.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/cmake/GNUInstallDirs.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/cmake/glm.pc.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/cmake/glmBuildConfig.cmake.in
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glm/cmake/glmConfig.cmake.in

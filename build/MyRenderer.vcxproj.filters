@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Console.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Error.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\MeshLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\RayTracer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Rasterizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\ShaderProgram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourceDir.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourcePoint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Ray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Console.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\MeshLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\RayTracer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Rasterizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\ShaderProgram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourceDir.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourcePoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Ray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Triangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\RayHit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{9527A972-31D0-3488-A352-FEE5ED0D09C7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4CF0CA40-0361-3B87-B9E7-BF48288DCFCC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

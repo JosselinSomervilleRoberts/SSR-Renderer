@@ -1,0 +1,32 @@
+^C:\USERS\JOSSE\DOCUMENTS\INF584\INF584_MYRENDERER\BUILD\CMAKEFILES\0A718B37C84052F7863FAC387E0AD106\GLAD.C.RULE
+setlocal
+cd C:\Users\josse\Documents\INF584\INF584_MyRenderer\External\glad
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\Python38\python.exe" -m glad --profile=core --out-path=C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/External/glad --api=gl=4.5 --generator=c --extensions= --spec=gl
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\JOSSE\DOCUMENTS\INF584\INF584_MYRENDERER\BUILD\CMAKEFILES\C02D7E4B2E50FE2A69C0CA53236AB961\GLAD-GENERATE-FILES.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\JOSSE\DOCUMENTS\INF584\INF584_MYRENDERER\EXTERNAL\GLAD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/josse/Documents/INF584/INF584_MyRenderer -BC:/Users/josse/Documents/INF584/INF584_MyRenderer/build --check-stamp-file C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/External/glad/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

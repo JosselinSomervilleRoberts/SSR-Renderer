@@ -1,0 +1,10 @@
+^C:\USERS\JOSSE\DOCUMENTS\INF584\INF584_MYRENDERER\BUILD\CMAKEFILES\67180038146F5DF0514F6E7598CFDB8D\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/josse/Documents/INF584/INF584_MyRenderer -BC:/Users/josse/Documents/INF584/INF584_MyRenderer/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/MyRenderer.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,13 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeCInformation.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/CMakeLanguageInformation.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Compiler/MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/FindPythonInterp.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Platform/Windows-MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.20/Modules/Platform/Windows-MSVC.cmake
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/External/glad/CMakeLists.txt
+C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/CMakeFiles/3.20.0-rc3/CMakeCCompiler.cmake

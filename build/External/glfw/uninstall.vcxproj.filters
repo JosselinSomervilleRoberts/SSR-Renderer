@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\build\CMakeFiles\8e5737f6492a956632faa0d0db95a272\uninstall.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\External\glfw\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\build\External\glfw\CMakeFiles\uninstall" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{7267CA08-6D83-3F52-BDC7-61597DAAD760}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

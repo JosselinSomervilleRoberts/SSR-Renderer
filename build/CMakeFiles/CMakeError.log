@@ -1,0 +1,14 @@
+Determining if the include file pthread.h exists failed with the following output:
+Change Dir: C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_49fec.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R) Build Engine version 16.9.0+57a23d249 pour .NET Framework
+Copyright (C) Microsoft Corporation. Tous droits réservés.
+
+  Compilateur d'optimisation Microsoft (R) C/C++ version 19.28.29910 pour x64
+  Copyright (C) Microsoft Corporation. Tous droits réservés.
+  CheckIncludeFile.c
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_49fec.dir\Debug\\" /Fd"cmTC_49fec.dir\Debug\vc142.pdb" /Gd /TC /errorReport:queue C:\Users\josse\Documents\INF584\INF584_MyRenderer\build\CMakeFiles\CMakeTmp\CheckIncludeFile.c
+C:\Users\josse\Documents\INF584\INF584_MyRenderer\build\CMakeFiles\CMakeTmp\CheckIncludeFile.c(1,10): fatal error C1083: Impossible d'ouvrir le fichier include : 'pthread.h' : No such file or directory [C:\Users\josse\Documents\INF584\INF584_MyRenderer\build\CMakeFiles\CMakeTmp\cmTC_49fec.vcxproj]
+
+
+

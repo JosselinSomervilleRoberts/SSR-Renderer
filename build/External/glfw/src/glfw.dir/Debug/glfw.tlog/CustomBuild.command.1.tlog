@@ -1,0 +1,10 @@
+^C:\USERS\JOSSE\DOCUMENTS\INF584\INF584_MYRENDERER\EXTERNAL\GLFW\SRC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/josse/Documents/INF584/INF584_MyRenderer -BC:/Users/josse/Documents/INF584/INF584_MyRenderer/build --check-stamp-file C:/Users/josse/Documents/INF584/INF584_MyRenderer/build/External/glfw/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
