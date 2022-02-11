@@ -104,7 +104,7 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			scenePtr->camera()->setFoV (std::min (120.f, scenePtr->camera()->getFoV () + 5.f));
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
 			isDisplayRaytracing = !isDisplayRaytracing;
-			if(isDisplayRaytracing) rayTracerPtr->render (scenePtr);
+			//if(isDisplayRaytracing) rayTracerPtr->render (scenePtr);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_SPACE) {
 			raytrace ();
 		} else {

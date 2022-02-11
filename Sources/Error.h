@@ -20,3 +20,29 @@ void APIENTRY debugMessageCallback (GLenum source,
         				   			const void* userParam);
 
 void exitOnCriticalError (const std::string & message);
+
+
+static int printOglError (const std::string & msg, const char * file, int line) {
+
+    GLenum glErr;
+
+    int    retCode = 0;
+
+    glErr = glGetError ();
+
+    while (glErr != GL_NO_ERROR) {
+
+        printf ("glError in file %s @ line %d: %s - %s\n", file, line, "None", msg.c_str ());
+
+        retCode = 1;
+
+        glErr = glGetError ();
+
+    }
+
+    return retCode;
+
+}
+
+#define printOpenGLError(MSG) printOglError ((MSG), __FILE__, __LINE__)
+

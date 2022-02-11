@@ -11,7 +11,7 @@
 #include "Console.h"
 #include "Camera.h"
 
-#define PI 3.1415
+#define PI 3.1415f
 
 
 RayTracer::RayTracer() : 
@@ -34,40 +34,37 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 	// <---- Ray tracing code ---->
 	size_t numOfMeshes = scenePtr->numOfMeshes ();
 	glm::vec3 camPos = scenePtr->camera()->getPosition();
+	
+	RayHit rayHit = RayHit(0, 0, 0, 0);
 
 	for(size_t x=0; x<width; x++) {
 		for(size_t y=0; y<height; y++) {
 			float posX = x / (float)(width  - 1);
-			float posY = y / (float)(height - 1);
+			float posY = 1 - (y / (float)(height - 1));
 
 			Ray ray = scenePtr->camera()->rayAt(posX, posY);
 			float e = std::numeric_limits<float>::max();
 
-			//std::cout << ray.origin.x << ", " << ray.origin.y << ", " << ray.origin.z  << " / " << ray.direction.x << ", " << ray.direction.y << ", " << ray.direction.z << std::endl;
-			
 			for (size_t i = 0; i < numOfMeshes; i++) {
-				const std::shared_ptr<Mesh> mesh = scenePtr->mesh(i);
+				const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
 
-				const std::vector<glm::vec3> vertexPositions  = mesh->vertexPositions();
-				const std::vector<glm::uvec3> triangleIndices = mesh->triangleIndices();
+				const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
+				const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
 				const size_t nbTriangles = triangleIndices.size();
 
 				for(size_t k=0; k<nbTriangles; k++) {
-					const glm::uvec3 trianglePos = triangleIndices[k];
-					const glm::vec3 p0 = glm::vec3(scenePtr->camera()->computeViewMatrix() * glm::vec4(vertexPositions[trianglePos[0]], 1.0f));
-					const glm::vec3 p1 = glm::vec3(scenePtr->camera()->computeViewMatrix() * glm::vec4(vertexPositions[trianglePos[1]], 1.0f));
-					const glm::vec3 p2 = glm::vec3(scenePtr->camera()->computeViewMatrix() * glm::vec4(vertexPositions[trianglePos[2]], 1.0f));
-					Triangle triangle(p0, p1, p2);
-
-					RayHit* rayHit = rayIntersect(ray, triangle);
-
-					if(rayHit != nullptr) {
-						std::cout << "intersection";
-						float d = glm::distance(camPos, rayHit->hitPosition());
+					const glm::uvec3& trianglePos = triangleIndices[k];
+					const glm::vec3& p0 = vertexPositions[trianglePos[0]];
+					const glm::vec3& p1 = vertexPositions[trianglePos[1]];
+					const glm::vec3& p2 = vertexPositions[trianglePos[2]];
+					
+					bool hit = rayIntersect(rayHit, ray, p0, p1, p2);
+					
+					if(hit) {
+						float d = glm::distance(camPos, rayHit.hitPosition(p0, p1, p2));
 						if(d < e) {
 							e = d;
-							m_imagePtr->operator()(x,y) = shade(rayHit, scenePtr);// TODO shade(rayHit)
-							delete rayHit;
+							m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);// TODO shade(rayHit)
 						}
 					}
 				}
@@ -81,19 +78,19 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 }
 
 
-RayHit* RayTracer::rayIntersect(Ray& ray, Triangle& triangle) {
+bool RayTracer::rayIntersect(RayHit& rayHit, Ray& ray, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const {
 	float epsilon = 0.00001f;
 
-	glm::vec3 e0 = triangle.p1 - triangle.p0;
-	glm::vec3 e1 = triangle.p2 - triangle.p0;
+	glm::vec3 e0 = p1 - p0;
+	glm::vec3 e1 = p2 - p0;
 	glm::vec3 n = glm::normalize(glm::cross(e0, e1));
 	glm::vec3 q = glm::cross(ray.direction, e1);
 	float a = glm::dot(e0, q);
 
-	if((glm::dot(n, ray.direction) >= 0) || (std::abs(a) < epsilon))
-		return nullptr;
+	if((glm::dot(n, ray.direction) >= 0) || (std::fabs(a) < epsilon))
+		return false;
 
-	glm::vec3 s = (ray.origin - triangle.p0) / a;
+	glm::vec3 s = (ray.origin - p0) / a;
 	glm::vec3 r = glm::cross(s, e0);
 
 	float b0 = glm::dot(s, q);
@@ -101,53 +98,87 @@ RayHit* RayTracer::rayIntersect(Ray& ray, Triangle& triangle) {
 	float b2 = 1 - b0 - b1;
 
 	if ((b0 < 0) || (b1 < 0) || (b2 < 0))
-		return nullptr;
+		return false;
 
 	float t = glm::dot(e1, r);
 
-	if (t >= 0)
-		return new RayHit(triangle, b0, b1, b2, t);
-
-	return nullptr;
-}
-
-
-glm::vec3 RayTracer::shade(RayHit* rayHit, const std::shared_ptr<Scene> scenePtr) {
-	const size_t numOfLightSourcesDir = scenePtr->numOfLightSourcesDir();
-
-	for(size_t i=0; i<numOfLightSourcesDir; i++) {
-
+	if (t >= 0) {
+		rayHit.b0 = b0;
+		rayHit.b1 = b1;
+		rayHit.b2 = b2;
+		rayHit.t = t;
+		return true;
 	}
 
-	return glm::vec3(1., 0., 0.);
+	return false;
 }
 
-glm::vec3 RayTracer::get_fd(Material& material) {
-	return material.albedo() / (float)(PI);
+
+glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t mesh_index, size_t triangle_index) {
+	// To compute the shading
+	const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(mesh_index);
+	size_t materialIndex = scenePtr->getMaterialOfMesh(mesh_index);
+	std::shared_ptr<Material> material  = scenePtr->material(materialIndex);
+	const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
+	const std::vector<glm::vec3>& vertexNormals    = mesh->vertexNormals();
+	const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
+	const glm::uvec3& trianglePos = triangleIndices[triangle_index];
+
+	// fPosition
+	const glm::vec3& p0 = vertexPositions[trianglePos[0]];
+	const glm::vec3& p1 = vertexPositions[trianglePos[1]];
+	const glm::vec3& p2 = vertexPositions[trianglePos[2]];
+	glm::mat4 modelMat = mesh->computeTransformMatrix ();
+	glm::mat4 viewMat = scenePtr->camera()->computeViewMatrix ();
+	glm::mat4 modelViewMat = viewMat * modelMat;
+	const glm::vec3 fPosition =  glm::vec3(modelViewMat * glm::vec4(rayHit.hitPosition(p1, p2, p0), 1.0f));
+
+	// Normal
+	const glm::vec3& n0 = vertexNormals[trianglePos[0]];
+	const glm::vec3& n1 = vertexNormals[trianglePos[1]];
+	const glm::vec3& n2 = vertexNormals[trianglePos[2]];
+	const glm::vec3 vNormal = glm::normalize(rayHit.hitPosition(n1, n2, n0));
+	glm::mat4 normalMat = glm::transpose (glm::inverse (modelViewMat));
+	glm::vec3 fNormal = glm::normalize(glm::vec3(normalMat * glm::vec4 (normalize (vNormal), 1.0)));
+
+
+	const size_t numOfLightSourcesDir = scenePtr->numOfLightSourcesDir();
+	glm::vec3 r = glm::vec3(0., 0., 0.);
+	for(size_t i=0; i<numOfLightSourcesDir; i++) {
+		auto lightSourcePtr = scenePtr->lightSourceDir(i);
+		glm::vec3 lightDirection = glm::normalize(glm::vec3(normalMat * glm::vec4(lightSourcePtr->direction, 1.0)));
+		r += get_r(material, fPosition, fNormal, -lightDirection, lightSourcePtr->intensity, lightSourcePtr->color);
+	}
+
+	return r;
 }
 
-glm::vec3 RayTracer::get_fs(Material& material, glm::vec3 w0, glm::vec3 wi, glm::vec3 wh, glm::vec3 n) {
-	float alpha = material.roughness();
-	float alpha2 = pow(alpha, 2);
+glm::vec3 RayTracer::get_fd(std::shared_ptr<Material>  material) {
+	return material->albedo() / (float)(PI);
+}
+
+glm::vec3 RayTracer::get_fs(std::shared_ptr<Material>  material, glm::vec3 w0, glm::vec3 wi, glm::vec3 wh, glm::vec3 n) {
+	float alpha = material->roughness();
+	float alpha2 = pow(alpha, 2.0f);
 		
-	float n_wh2 = pow(std::max(0.0f, dot(n, wh)), 2);
+	float n_wh2 = pow(std::max(0.0f, dot(n, wh)), 2.0f);
 	float n_wi = glm::dot(n, wi);
 	float n_w0 = glm::dot(n, w0);
 	float wi_wh = std::max(0.0f, glm::dot(wi, wh));
-	float D = alpha2 / (PI * pow(1 + (alpha2 - 1) * n_wh2, 2));
+	float D = alpha2 / (PI * pow(1.0f + (alpha2 - 1.0f) * n_wh2, 2.0f));
 		
-	glm::vec3 F0 = material.albedo() + (glm::vec3(1.) - material.albedo()) * material.metallicness();
-	glm::vec3 F = F0 - (float)(pow(1.0f - wi_wh, 5)) * (glm::vec3(1.0f) - F0);
+	glm::vec3 F0 = material->albedo() + (glm::vec3(1.) - material->albedo()) * material->metallicness();
+	glm::vec3 F = F0 - (float)(pow(1.0f - wi_wh, 5.0f)) * (glm::vec3(1.0f) - F0);
 		
-	float G1 = 2.0f * n_wi / (n_wi+sqrt(alpha2+(1-alpha2)*pow(n_wi,2)));
-	float G2 = 2.0f * n_w0 / (n_w0+sqrt(alpha2+(1-alpha2)*pow(n_w0,2)));
+	float G1 = 2.0f * n_wi / (n_wi+sqrt(alpha2+(1-alpha2)*pow(n_wi, 2.0f)));
+	float G2 = 2.0f * n_w0 / (n_w0+sqrt(alpha2+(1-alpha2)*pow(n_w0, 2.0f)));
 	float G = G1 * G2;
 		
 	glm::vec3 fs = D*F*G/(4*n_wi*n_w0);
 	return fs;
 }
 
-glm::vec3 RayTracer::get_r(Material& material, glm::vec3 fPosition, glm::vec3 fNormal, glm::vec3 lightDirection, float lightIntensity, glm::vec3 lightColor) {
+glm::vec3 RayTracer::get_r(std::shared_ptr<Material> material, glm::vec3 fPosition, glm::vec3 fNormal, glm::vec3 lightDirection, float lightIntensity, glm::vec3 lightColor) {
 	glm::vec3 w0 = - glm::normalize(fPosition);
 	glm::vec3 wi = glm::normalize(lightDirection);
 	glm::vec3 wh = glm::normalize(wi + w0);
