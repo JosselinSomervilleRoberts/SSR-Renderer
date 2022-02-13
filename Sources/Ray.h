@@ -10,10 +10,15 @@
 
 
 class Ray {
+
 public:
 	Ray();
 	Ray(glm::vec3 origin_, glm::vec3 direction_);
 
+	void setDirection(glm::vec3 direction_);
+	glm::vec3& getDirection() { return direction; };
+
 	glm::vec3 origin;
 	glm::vec3 direction;
+	glm::vec3 inv_dir;
 };

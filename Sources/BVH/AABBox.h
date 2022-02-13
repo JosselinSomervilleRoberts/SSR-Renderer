@@ -9,6 +9,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <vector>
 
+#include "../Ray.h"
+#include "../RayHit.h"
+
 
 
 class AABBox {
@@ -17,6 +20,8 @@ public:
 	AABBox() {};
 	AABBox(glm::vec3 cornerUp_, glm::vec3 cornerDown_) : cornerUp(cornerUp_), cornerDown(cornerDown_) {};
     inline void add(size_t triangle_index) { triangle_indeces.push_back(triangle_index); };
+
+    bool intersect(Ray& ray, glm::vec3& entrance, glm::vec3& exit);
 
 	glm::vec3 cornerUp;
     glm::vec3 cornerDown;
