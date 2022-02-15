@@ -44,6 +44,8 @@ public:
 	glm::vec3 get_fs(std::shared_ptr<Material>  material, glm::vec3 w0, glm::vec3 wi, glm::vec3 wh, glm::vec3 n);
 	glm::vec3 get_r(std::shared_ptr<Material>  material, glm::vec3 fPosition, glm::vec3 fNormal, glm::vec3 lightDirection, float lightIntensity, glm::vec3 lightColor);
 
+	bool useBVH = true;
+	
 private:
 	std::shared_ptr<Image> m_imagePtr;
 	BVH bvh;

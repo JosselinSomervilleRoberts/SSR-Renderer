@@ -47,29 +47,33 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 			Ray ray = scenePtr->camera()->rayAt(posX, posY);
 			rayHit.t = std::numeric_limits<float>::max();
 
-			/*
-			for (size_t i = 0; i < numOfMeshes; i++) {
-				const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
+			if (useBVH) {
+				size_t mesh_index = 0;
+				size_t triangle_index = 0;
+				bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
+				if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, mesh_index, triangle_index);
+			}
+			else {
+				for (size_t i = 0; i < numOfMeshes; i++) {
+					const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
 
-				const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
-				const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
-				const size_t nbTriangles = triangleIndices.size();
+					const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
+					const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
+					const size_t nbTriangles = triangleIndices.size();
 
-				for(size_t k=0; k<nbTriangles; k++) {
-					const glm::uvec3& trianglePos = triangleIndices[k];
-					const glm::vec3& p0 = vertexPositions[trianglePos[0]];
-					const glm::vec3& p1 = vertexPositions[trianglePos[1]];
-					const glm::vec3& p2 = vertexPositions[trianglePos[2]];
-					
-					bool hit = ray.intersect(rayHit, p0, p1, p2);
-					if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);
+					for(size_t k=0; k<nbTriangles; k++) {
+						const glm::uvec3& trianglePos = triangleIndices[k];
+						const glm::vec3& p0 = vertexPositions[trianglePos[0]];
+						const glm::vec3& p1 = vertexPositions[trianglePos[1]];
+						const glm::vec3& p2 = vertexPositions[trianglePos[2]];
+						
+						bool hit = ray.intersect(rayHit, p0, p1, p2);
+						if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);
+					}
 				}
-			}*/
+			}
 
-			size_t mesh_index = 0;
-			size_t triangle_index = 0;
-			bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
-			if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, mesh_index, triangle_index);
+			
 		}
 	}
 

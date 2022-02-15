@@ -78,7 +78,8 @@ void printHelp () {
    			  + "\t* F: decrease field of view\n"
    			  + "\t* G: increase field of view\n"
    			  + "\t* TAB: switch between rasterization and ray tracing display\n"
-   			  + "\t* SPACE: execute ray tracing\n");
+   			  + "\t* SPACE: execute ray tracing\n"
+		      + "\t* A: enable/disable acceleration ray tracing with BVH\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.
@@ -100,6 +101,8 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			rasterizerPtr->loadShaderProgram (basePath);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F) {
 			scenePtr->camera()->setFoV (std::max (5.f, scenePtr->camera()->getFoV () - 5.f));
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_Q) { // A on a french keyboard
+			rayTracerPtr->useBVH =!(rayTracerPtr->useBVH);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_G) {
 			scenePtr->camera()->setFoV (std::min (120.f, scenePtr->camera()->getFoV () + 5.f));
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {
