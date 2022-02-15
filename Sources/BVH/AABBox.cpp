@@ -1,7 +1,7 @@
 #include "AABBox.h"
 
 
-bool AABBox::intersect(Ray& ray, glm::vec3& entrance, glm::vec3& exit) {
+bool AABBox::intersect(Ray& ray, float& tmin_) {
     // Slab Method
     // This is a branchless method and is known to be the fastest
     float tx1 = (cornerDown.x - ray.origin.x) * ray.inv_dir.x;
@@ -24,8 +24,7 @@ bool AABBox::intersect(Ray& ray, glm::vec3& entrance, glm::vec3& exit) {
 
     if (tmax >= tmin) {
         // There is an intesection so fill the references
-        entrance = ray.origin + ray.direction * tmin;
-        exit     = ray.origin + ray.direction * tmax;
+        tmin_ = tmin;
         return true;
     }
 

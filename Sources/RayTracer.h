@@ -24,7 +24,7 @@
 #include "RayHit.h"
 #include "Triangle.h"
 #include "Material.h"
-
+#include "BVH/BVH.h"
 
 using namespace std;
 
@@ -39,7 +39,6 @@ public:
 	void init (const std::shared_ptr<Scene> scenePtr);
 	void render (const std::shared_ptr<Scene> scenePtr);
 
-	bool rayIntersect(RayHit& rayHit, Ray& ray, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const;
 	glm::vec3 shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t mesh_index, size_t triangle_index);
 	glm::vec3 get_fd(std::shared_ptr<Material>  material);
 	glm::vec3 get_fs(std::shared_ptr<Material>  material, glm::vec3 w0, glm::vec3 wi, glm::vec3 wh, glm::vec3 n);
@@ -47,4 +46,5 @@ public:
 
 private:
 	std::shared_ptr<Image> m_imagePtr;
+	BVH bvh;
 };

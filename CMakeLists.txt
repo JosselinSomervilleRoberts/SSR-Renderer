@@ -38,6 +38,10 @@ add_executable (
 	Sources/Ray.h
 	Sources/Triangle.h
 	Sources/RayHit.h
+	Sources/BVH/AABBox.cpp
+	Sources/BVH/AABBox.h
+	Sources/BVH/BVH.cpp
+	Sources/BVH/BVH.h
 )
 
 set_target_properties(MyRenderer PROPERTIES

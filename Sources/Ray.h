@@ -8,6 +8,8 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+#include "RayHit.h"
+
 
 class Ray {
 
@@ -17,6 +19,8 @@ public:
 
 	void setDirection(glm::vec3 direction_);
 	glm::vec3& getDirection() { return direction; };
+
+	bool intersect(RayHit& rayHit, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const;
 
 	glm::vec3 origin;
 	glm::vec3 direction;

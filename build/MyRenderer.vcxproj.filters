@@ -37,6 +37,12 @@
     <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Ray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\BVH\AABBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\BVH\BVH.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Console.h">
@@ -91,6 +97,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\RayHit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\BVH\AABBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\BVH\BVH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

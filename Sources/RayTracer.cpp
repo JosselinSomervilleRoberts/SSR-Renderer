@@ -17,9 +17,11 @@
 RayTracer::RayTracer() : 
 	m_imagePtr (std::make_shared<Image>()) {}
 
-RayTracer::~RayTracer() {}
+RayTracer::~RayTracer() {
+}
 
 void RayTracer::init (const std::shared_ptr<Scene> scenePtr) {
+	bvh.init(scenePtr);
 }
 
 void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
@@ -43,8 +45,9 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 			float posY = 1 - (y / (float)(height - 1));
 
 			Ray ray = scenePtr->camera()->rayAt(posX, posY);
-			float e = std::numeric_limits<float>::max();
+			rayHit.t = std::numeric_limits<float>::max();
 
+			/*
 			for (size_t i = 0; i < numOfMeshes; i++) {
 				const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
 
@@ -58,17 +61,15 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 					const glm::vec3& p1 = vertexPositions[trianglePos[1]];
 					const glm::vec3& p2 = vertexPositions[trianglePos[2]];
 					
-					bool hit = rayIntersect(rayHit, ray, p0, p1, p2);
-					
-					if(hit) {
-						float d = glm::distance(camPos, rayHit.hitPosition(p0, p1, p2));
-						if(d < e) {
-							e = d;
-							m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);// TODO shade(rayHit)
-						}
-					}
+					bool hit = ray.intersect(rayHit, p0, p1, p2);
+					if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);
 				}
-			}
+			}*/
+
+			size_t mesh_index = 0;
+			size_t triangle_index = 0;
+			bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
+			if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, mesh_index, triangle_index);
 		}
 	}
 
@@ -77,41 +78,6 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 	Console::print ("Ray tracing executed in " + std::to_string(elapsedTime) + "ms");
 }
 
-
-bool RayTracer::rayIntersect(RayHit& rayHit, Ray& ray, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const {
-	float epsilon = 0.00001f;
-
-	glm::vec3 e0 = p1 - p0;
-	glm::vec3 e1 = p2 - p0;
-	glm::vec3 n = glm::normalize(glm::cross(e0, e1));
-	glm::vec3 q = glm::cross(ray.direction, e1);
-	float a = glm::dot(e0, q);
-
-	if((glm::dot(n, ray.direction) >= 0) || (std::fabs(a) < epsilon))
-		return false;
-
-	glm::vec3 s = (ray.origin - p0) / a;
-	glm::vec3 r = glm::cross(s, e0);
-
-	float b0 = glm::dot(s, q);
-	float b1 = glm::dot(r, ray.direction);
-	float b2 = 1 - b0 - b1;
-
-	if ((b0 < 0) || (b1 < 0) || (b2 < 0))
-		return false;
-
-	float t = glm::dot(e1, r);
-
-	if (t >= 0) {
-		rayHit.b0 = b0;
-		rayHit.b1 = b1;
-		rayHit.b2 = b2;
-		rayHit.t = t;
-		return true;
-	}
-
-	return false;
-}
 
 
 glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t mesh_index, size_t triangle_index) {
