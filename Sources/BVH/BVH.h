@@ -26,6 +26,7 @@ public:
     ~BVH();
 
     bool intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index);
+    bool intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index, float tmin);
 	
 
     const std::shared_ptr<Scene> scenePtr;

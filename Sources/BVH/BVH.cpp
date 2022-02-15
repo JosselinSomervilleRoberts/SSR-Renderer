@@ -205,11 +205,11 @@ BVH::~BVH() {
 }
 
 
-bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index) {
+bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index, float tmin) {
     // If we have a leaf, then no need to check intersection with box, let's check
     // intersection with triangle to save time
     if(child_left == nullptr) { // If it's a leaf
-        std::pair<size_t, size_t> pair = box.triangles[0];
+        std::pair<size_t, size_t>& pair = box.triangles[0];
         const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(pair.first);
         glm::uvec3& triangleIndex  = mesh->triangleIndices()[pair.second];
         glm::vec3& p0 = mesh->vertexPositions()[triangleIndex[0]];
@@ -225,17 +225,35 @@ bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& 
         return false;
     }
 
-    // Check intersection with box
-    float tmin = 0;
-    bool intersect = box.intersect(ray, tmin);
-    if(!intersect) return false;
-
     // To optimisize (so that we do not check useless boxes)
     if(tmin >= rayHit.t) // Thi means that we won't find a closer intersection
         return false;
 
     // We now check with childs
-    bool intesect_left  = child_left->intersect(scenePtr,  rayHit, ray, mesh_index, triangle_index);
-    bool intesect_right = child_right->intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
-    return (intesect_left || intesect_right);
+    float tminRight = 0;
+    bool intersectRight = child_right->box.intersect(ray, tminRight);
+    float tminLeft = 0;
+    bool intersectLeft = child_left->box.intersect(ray, tminLeft);
+    
+    if(!intersectLeft && !intersectRight) return false;
+    else if(!intersectRight) return child_left->intersect(scenePtr,  rayHit, ray, mesh_index, triangle_index, tminLeft);
+    else if(!intersectLeft)  return child_right->intersect(scenePtr,  rayHit, ray, mesh_index, triangle_index, tminRight);
+    else if(tminRight < tminLeft) {
+        bool intesect_right = child_right->intersect(scenePtr, rayHit, ray, mesh_index, triangle_index, tminRight);
+        bool intesect_left  = child_left->intersect(scenePtr,  rayHit, ray, mesh_index, triangle_index, tminLeft);
+        return (intesect_left || intesect_right);
+    }
+    else {
+        bool intesect_left  = child_left->intersect(scenePtr,  rayHit, ray, mesh_index, triangle_index, tminLeft);
+        bool intesect_right = child_right->intersect(scenePtr, rayHit, ray, mesh_index, triangle_index, tminRight);
+        return (intesect_left || intesect_right);
+    }
+}
+
+
+bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index) {
+    float tmin = 0;
+    bool hit = box.intersect(ray, tmin);
+    if(!hit) return false;
+    return this->intersect(scenePtr, rayHit, ray, mesh_index, triangle_index, tmin);
 }
