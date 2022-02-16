@@ -39,10 +39,11 @@ public:
 	void init (const std::shared_ptr<Scene> scenePtr);
 	void render (const std::shared_ptr<Scene> scenePtr);
 
-	glm::vec3 shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t mesh_index, size_t triangle_index);
-	glm::vec3 get_fd(std::shared_ptr<Material>  material);
-	glm::vec3 get_fs(std::shared_ptr<Material>  material, glm::vec3 w0, glm::vec3 wi, glm::vec3 wh, glm::vec3 n);
-	glm::vec3 get_r(std::shared_ptr<Material>  material, glm::vec3 fPosition, glm::vec3 fNormal, glm::vec3 lightDirection, float lightIntensity, glm::vec3 lightColor);
+	glm::vec3 shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t& mesh_index, size_t& triangle_index);
+	glm::vec3 shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, size_t& mesh_index, size_t& triangle_index, glm::mat4& modelViewMat, glm::mat4& normalMat);
+	glm::vec3 get_fd(std::shared_ptr<Material> material);
+	glm::vec3 get_fs(std::shared_ptr<Material> material, glm::vec3& w0, glm::vec3& wi, glm::vec3& wh, glm::vec3& n);
+	glm::vec3 get_r (std::shared_ptr<Material> material, glm::vec3& fPosition, glm::vec3& fNormal, glm::vec3& lightDirection, float& lightIntensity, glm::vec3& lightColor);
 
 	bool useBVH = true;
 	
