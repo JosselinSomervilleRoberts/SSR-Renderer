@@ -161,33 +161,50 @@ void BVH::init(const std::shared_ptr<Scene> scenePtr, std::vector<std::pair<size
 
     for (size_t i = 0; i < triangles.size(); i++) {
         std::pair<size_t, size_t> pair = box.triangles[i];
-        const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(pair.first);
-        glm::uvec3& triangleIndex  = mesh->triangleIndices()[pair.second];
-        const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
-        
-        size_t right = 0;
-        size_t equality = 0;
-        for(size_t k=0; k<3; k++) {
-            if (vertexPositions[triangleIndex[k]][axis] > median) right++;
-            if (vertexPositions[triangleIndex[k]][axis] == median) equality++;
+
+        bool needToAdd = true;
+        if(i+1 ==  triangles.size()) {
+            if(trianglesRight.size() == 0){
+                trianglesRight.push_back(pair);
+                needToAdd = false;
+            }
+            if(trianglesLeft.size() == 0)  {
+                trianglesLeft.push_back(pair);
+                needToAdd = false;
+            }
         }
 
-        if(equality == 3)
-            std::cout << "BIG ERRRRRRRRRORRRRRRRR" << std::endl;
-        else if(equality == 2) {
-            if(right > 0) trianglesRight.push_back(pair);
-            else trianglesLeft.push_back(pair);
-        }
-        else if(equality == 1) {
-            if(right == 2) trianglesRight.push_back(pair);
-            else if(right == 0) trianglesLeft.push_back(pair);
-            else {
+        if(needToAdd) {
+            const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(pair.first);
+            glm::uvec3& triangleIndex  = mesh->triangleIndices()[pair.second];
+            const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
+            
+            size_t right = 0;
+            size_t equality = 0;
+            for(size_t k=0; k<3; k++) {
+                if (vertexPositions[triangleIndex[k]][axis] > median) right++;
+                if (vertexPositions[triangleIndex[k]][axis] == median) equality++;
+            }
+
+            if(equality == 3) {
                 if(trianglesRight.size() >= trianglesLeft.size()) trianglesLeft.push_back(pair);
                 else trianglesRight.push_back(pair);
             }
+            else if(equality == 2) {
+                if(right > 0) trianglesRight.push_back(pair);
+                else trianglesLeft.push_back(pair);
+            }
+            else if(equality == 1) {
+                if(right == 2) trianglesRight.push_back(pair);
+                else if(right == 0) trianglesLeft.push_back(pair);
+                else {
+                    if(trianglesRight.size() >= trianglesLeft.size()) trianglesLeft.push_back(pair);
+                    else trianglesRight.push_back(pair);
+                }
+            }
+            else if(right >= 2) trianglesRight.push_back(pair);
+            else trianglesLeft.push_back(pair);
         }
-        else if(right >= 2) trianglesRight.push_back(pair);
-        else trianglesLeft.push_back(pair);
     }
 
     // 5. Create the childs
