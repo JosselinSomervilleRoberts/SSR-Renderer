@@ -44,7 +44,9 @@ public:
 	inline glm::mat4 computeProjectionMatrix () const {	return glm::perspective (glm::radians (m_fov), m_aspectRatio, m_near, m_far); }
 
 	inline glm::vec3 getPosition() { return glm::vec3(0., 0., 0.); };
+	void computeVectorsForRayAt(glm::vec3& viewRight, glm::vec3& viewUp, glm::vec3& viewDir, glm::vec3& eye, float& w);
 	Ray rayAt (float x, float y);
+	Ray rayAt (float x, float y, glm::vec3& viewRight, glm::vec3& viewUp, glm::vec3& viewDir, glm::vec3& eye, float& w);
 
 private:
 	float m_fov = 45.f; // Vertical field of view, in degrees

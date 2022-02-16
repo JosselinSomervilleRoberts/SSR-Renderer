@@ -38,22 +38,28 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 	glm::vec3 camPos = scenePtr->camera()->getPosition();
 	
 	RayHit rayHit = RayHit(0, 0, 0, 0);
+	Ray ray;
+
+	glm::vec3 viewRight,  viewUp,  viewDir,  eye;
+    float w;
+    if(useBVH) scenePtr->camera()->computeVectorsForRayAt(viewRight, viewUp, viewDir, eye, w);
 
 	for(size_t x=0; x<width; x++) {
 		for(size_t y=0; y<height; y++) {
 			float posX = x / (float)(width  - 1);
 			float posY = 1 - (y / (float)(height - 1));
 
-			Ray ray = scenePtr->camera()->rayAt(posX, posY);
 			rayHit.t = std::numeric_limits<float>::max();
 
 			if (useBVH) {
+				ray = scenePtr->camera()->rayAt(posX, posY, viewRight, viewUp, viewDir, eye, w);
 				size_t mesh_index = 0;
 				size_t triangle_index = 0;
 				bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
 				if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, mesh_index, triangle_index);
 			}
 			else {
+				ray = scenePtr->camera()->rayAt(posX, posY);
 				for (size_t i = 0; i < numOfMeshes; i++) {
 					const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
 
