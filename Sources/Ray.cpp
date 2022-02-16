@@ -18,7 +18,7 @@ void Ray::setDirection(glm::vec3 direction_) {
 
 
 bool Ray::intersect(RayHit& rayHit, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const {
-	float epsilon = 0.00001f;
+	float epsilon = 0.0000000001f;
 
 	glm::vec3 e0 = p1 - p0;
 	glm::vec3 e1 = p2 - p0;

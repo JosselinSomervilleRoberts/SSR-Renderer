@@ -178,10 +178,10 @@ glm::vec3 RayTracer::get_fs(std::shared_ptr<Material> material, glm::vec3& w0, g
 
 glm::vec3 RayTracer::get_r(std::shared_ptr<Material> material, glm::vec3& fPosition, glm::vec3& fNormal, glm::vec3& lightDirection, float& lightIntensity, glm::vec3& lightColor) {
 	glm::vec3 w0 = - glm::normalize(fPosition);
-	glm::vec3 wi = glm::normalize(lightDirection);
+	glm::vec3& wi = lightDirection;
 	glm::vec3 wh = glm::normalize(wi + w0);
 
-	glm::vec3 n = glm::normalize(fNormal);
+	glm::vec3& n = fNormal;
 	glm::vec3 fs = get_fs(material, w0, wi, wh, n);
 	glm::vec3 fd = get_fd(material);
 

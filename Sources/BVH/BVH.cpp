@@ -206,6 +206,10 @@ BVH::~BVH() {
 
 
 bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index, float tmin) {
+    // To optimisize (so that we do not check useless boxes)
+    if(tmin >= rayHit.t) // Thi means that we won't find a closer intersection
+        return false;
+
     // If we have a leaf, then no need to check intersection with box, let's check
     // intersection with triangle to save time
     if(child_left == nullptr) { // If it's a leaf
@@ -224,10 +228,6 @@ bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& 
         }
         return false;
     }
-
-    // To optimisize (so that we do not check useless boxes)
-    if(tmin >= rayHit.t) // Thi means that we won't find a closer intersection
-        return false;
 
     // We now check with childs
     float tminRight = 0;
