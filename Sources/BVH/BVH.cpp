@@ -308,15 +308,15 @@ bool BVH::fastIntersect(const std::shared_ptr<Scene> scenePtr, Ray& ray, float t
     else if(!intersectRight) return child_left->fastIntersect(scenePtr, ray, tminLeft);
     else if(!intersectLeft)  return child_right->fastIntersect(scenePtr, ray, tminRight);
     else if(tminRight < tminLeft) {
-        bool intesect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
-        if (intesect_right) return true; // To make things faster
-        bool intesect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
-        return (intesect_left || intesect_right);
+        bool intersect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
+        if (intersect_right) return true; // To make things faster
+        bool intersect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
+        return intersect_left;
     }
     else {
-        bool intesect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
-        if (intesect_left) return true; // To make things faster
-        bool intesect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
-        return (intesect_left || intesect_right);
+        bool intersect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
+        if (intersect_left) return true; // To make things faster
+        bool intersect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
+        return intersect_right;
     }
 }

@@ -80,7 +80,8 @@ void printHelp () {
    			  + "\t* TAB: switch between rasterization and ray tracing display\n"
    			  + "\t* SPACE: execute ray tracing\n"
 		      + "\t* A: enable/disable acceleration ray tracing with BVH\n"
-		      + "\t* O: enable/disable occlusion in ray tracing\n");
+		      + "\t* O: enable/disable occlusion in ray tracing\n"
+		      + "\t* P: enable/disable anti-aliasing in ray tracing\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.
@@ -106,6 +107,9 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			rayTracerPtr->useBVH =!(rayTracerPtr->useBVH);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_O) { // O on a french keyboard
 			rayTracerPtr->useOcclusion =!(rayTracerPtr->useOcclusion);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_P) { // P on a french keyboard
+			if (rayTracerPtr->alias_number > 1) rayTracerPtr->alias_number = 1;
+			else rayTracerPtr->alias_number = 3;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_G) {
 			scenePtr->camera()->setFoV (std::min (120.f, scenePtr->camera()->getFoV () + 5.f));
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_TAB) {

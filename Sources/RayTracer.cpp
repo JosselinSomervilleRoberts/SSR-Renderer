@@ -32,7 +32,7 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 	std::chrono::high_resolution_clock clock;
 	Console::print ("Start ray tracing at " + std::to_string (width) + "x" + std::to_string (height) + " resolution...");
 	std::chrono::time_point<std::chrono::high_resolution_clock> before = clock.now();
-	m_imagePtr->clear (scenePtr->backgroundColor ());
+	//m_imagePtr->clear (scenePtr->backgroundColor ());
 	//m_imagePtr->operator()(10, 10) = glm::vec3(1.0, 0.0, 0.0);
 	
 	// <---- Ray tracing code ---->
@@ -62,42 +62,65 @@ void RayTracer::render (const std::shared_ptr<Scene> scenePtr) {
 		}
 	}
 
+	float posX, posY;
+	float shiftedX, shiftedY;
+	float rx, ry;
+	glm::vec3 color;
+	glm::vec3 backgroundColor = scenePtr->backgroundColor ();
+
 	for(size_t x=0; x<width; x++) {
 		for(size_t y=0; y<height; y++) {
-			float posX = x / (float)(width  - 1);
-			float posY = 1 - (y / (float)(height - 1));
+			color = glm::vec3(0.0f, 0.0f, 0.0f);
 
-			rayHit.t = std::numeric_limits<float>::max();
+			for(size_t kx=0; kx<alias_number; kx++) {
+				for(size_t ky=0; ky<alias_number; ky++) {
+					if(alias_number > 1) { // Use anti-aliasing
+						rx = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+						ry = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+						shiftedX = x + (kx + rx) /(float)(alias_number) - 0.5f;
+						shiftedY = y + (ky + ry) /(float)(alias_number) - 0.5f;
+					}
+					else { // No anti-aliasing
+						shiftedX = x;
+						shiftedY = y;
+					}
+					posX = shiftedX / (float)(width  - 1);
+					posY = 1 - (shiftedY / (float)(height - 1));
 
-			if (useBVH) {
-				ray = scenePtr->camera()->rayAt(posX, posY, viewRight, viewUp, viewDir, eye, w);
-				size_t mesh_index = 0;
-				size_t triangle_index = 0;
-				bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
-				if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, mesh_index, triangle_index, modelViewMats[mesh_index], normalMats[mesh_index]);
-			}
-			else {
-				ray = scenePtr->camera()->rayAt(posX, posY);
-				for (size_t i = 0; i < numOfMeshes; i++) {
-					const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
+					rayHit.t = std::numeric_limits<float>::max();
 
-					const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
-					const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
-					const size_t nbTriangles = triangleIndices.size();
+					if (useBVH) {
+						ray = scenePtr->camera()->rayAt(posX, posY, viewRight, viewUp, viewDir, eye, w);
+						size_t mesh_index = 0;
+						size_t triangle_index = 0;
+						bool hit = bvh.intersect(scenePtr, rayHit, ray, mesh_index, triangle_index);
+						if(hit) color += shade(scenePtr, rayHit, mesh_index, triangle_index, modelViewMats[mesh_index], normalMats[mesh_index]);
+						else 	color += backgroundColor;
+					}
+					else {
+						ray = scenePtr->camera()->rayAt(posX, posY);
+						for (size_t i = 0; i < numOfMeshes; i++) {
+							const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(i);
 
-					for(size_t k=0; k<nbTriangles; k++) {
-						const glm::uvec3& trianglePos = triangleIndices[k];
-						const glm::vec3& p0 = vertexPositions[trianglePos[0]];
-						const glm::vec3& p1 = vertexPositions[trianglePos[1]];
-						const glm::vec3& p2 = vertexPositions[trianglePos[2]];
-						
-						bool hit = ray.intersect(rayHit, p0, p1, p2);
-						if(hit) m_imagePtr->operator()(x,y) = shade(scenePtr, rayHit, i, k);
+							const std::vector<glm::vec3>& vertexPositions  = mesh->vertexPositions();
+							const std::vector<glm::uvec3>& triangleIndices = mesh->triangleIndices();
+							const size_t nbTriangles = triangleIndices.size();
+
+							for(size_t k=0; k<nbTriangles; k++) {
+								const glm::uvec3& trianglePos = triangleIndices[k];
+								const glm::vec3& p0 = vertexPositions[trianglePos[0]];
+								const glm::vec3& p1 = vertexPositions[trianglePos[1]];
+								const glm::vec3& p2 = vertexPositions[trianglePos[2]];
+								
+								bool hit = ray.intersect(rayHit, p0, p1, p2);
+								if(hit) color += shade(scenePtr, rayHit, i, k);
+								else 	color += backgroundColor;
+							}
+						}
 					}
 				}
 			}
-
-			
+			m_imagePtr->operator()(x,y) = color / (float)(alias_number*alias_number);
 		}
 	}
 
@@ -145,12 +168,15 @@ glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit
 
 	const size_t numOfLightSourcesDir = scenePtr->numOfLightSourcesDir();
 	glm::vec3 r = glm::vec3(0., 0., 0.);
+	Ray rayOcclusion;
+
 	for(size_t i=0; i<numOfLightSourcesDir; i++) {
 		auto lightSourcePtr = scenePtr->lightSourceDir(i);
 
 		bool hit = false;
 		if(useOcclusion) {
-			Ray rayOcclusion(interpolatedPos, - lightSourcePtr->direction);
+			rayOcclusion.origin = interpolatedPos;
+			rayOcclusion.setDirection(- lightSourcePtr->direction);
 			hit = bvh.fastIntersect(scenePtr, rayOcclusion);
 		}
 

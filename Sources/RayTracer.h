@@ -47,6 +47,7 @@ public:
 
 	bool useBVH = true;
 	bool useOcclusion = false;
+	int alias_number = 1;
 	
 private:
 	std::shared_ptr<Image> m_imagePtr;
