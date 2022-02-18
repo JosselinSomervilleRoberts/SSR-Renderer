@@ -21,6 +21,7 @@ public:
 	glm::vec3& getDirection() { return direction; };
 
 	bool intersect(RayHit& rayHit, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const;
+	bool fastIntersect(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2) const;
 
 	glm::vec3 origin;
 	glm::vec3 direction;

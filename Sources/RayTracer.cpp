@@ -132,7 +132,8 @@ glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit
 	const glm::vec3& p0 = vertexPositions[trianglePos[0]];
 	const glm::vec3& p1 = vertexPositions[trianglePos[1]];
 	const glm::vec3& p2 = vertexPositions[trianglePos[2]];
-	glm::vec3 fPosition =  glm::vec3(modelViewMat * glm::vec4(rayHit.hitPosition(p1, p2, p0), 1.0f));
+	const glm::vec3 interpolatedPos = rayHit.hitPosition(p1, p2, p0);
+	glm::vec3 fPosition =  glm::vec3(modelViewMat * glm::vec4(interpolatedPos, 1.0f));
 
 	// Normal
 	const glm::vec3& n0 = vertexNormals[trianglePos[0]];
@@ -146,8 +147,17 @@ glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit
 	glm::vec3 r = glm::vec3(0., 0., 0.);
 	for(size_t i=0; i<numOfLightSourcesDir; i++) {
 		auto lightSourcePtr = scenePtr->lightSourceDir(i);
-		glm::vec3 lightDirection = glm::normalize(glm::vec3(normalMat * glm::vec4(lightSourcePtr->direction, 1.0)));
-		r += get_r(material, fPosition, fNormal, -lightDirection, lightSourcePtr->intensity, lightSourcePtr->color);
+
+		bool hit = false;
+		if(useOcclusion) {
+			Ray rayOcclusion(interpolatedPos, - lightSourcePtr->direction);
+			hit = bvh.fastIntersect(scenePtr, rayOcclusion);
+		}
+
+		if(!hit) {
+			glm::vec3 lightDirection = glm::normalize(glm::vec3(normalMat * glm::vec4(lightSourcePtr->direction, 1.0)));
+			r += get_r(material, fPosition, fNormal, -lightDirection, lightSourcePtr->intensity, lightSourcePtr->color);
+		}
 	}
 
 	return r;

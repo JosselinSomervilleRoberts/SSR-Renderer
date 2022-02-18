@@ -223,7 +223,7 @@ BVH::~BVH() {
 
 
 bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& ray, size_t& mesh_index, size_t& triangle_index, float tmin) {
-    // To optimisize (so that we do not check useless boxes)
+    // To optimize (so that we do not check useless boxes)
     if(tmin >= rayHit.t) // Thi means that we won't find a closer intersection
         return false;
 
@@ -273,4 +273,50 @@ bool BVH::intersect(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit, Ray& 
     bool hit = box.intersect(ray, tmin);
     if(!hit) return false;
     return this->intersect(scenePtr, rayHit, ray, mesh_index, triangle_index, tmin);
+}
+
+
+
+bool BVH::fastIntersect(const std::shared_ptr<Scene> scenePtr, Ray& ray) {
+    float tmin = 0;
+    bool hit = box.intersect(ray, tmin);
+    if(!hit) return false;
+    return this->fastIntersect(scenePtr, ray, tmin);
+}
+
+bool BVH::fastIntersect(const std::shared_ptr<Scene> scenePtr, Ray& ray, float tmin) {
+    // If we have a leaf, then no need to check intersection with box, let's check
+    // intersection with triangle to save time
+    if(child_left == nullptr) { // If it's a leaf
+        std::pair<size_t, size_t>& pair = box.triangles[0];
+        const std::shared_ptr<Mesh>& mesh = scenePtr->mesh(pair.first);
+        glm::uvec3& triangleIndex  = mesh->triangleIndices()[pair.second];
+        glm::vec3& p0 = mesh->vertexPositions()[triangleIndex[0]];
+        glm::vec3& p1 = mesh->vertexPositions()[triangleIndex[1]];
+        glm::vec3& p2 = mesh->vertexPositions()[triangleIndex[2]];
+        
+        return ray.fastIntersect(p0, p1, p2);
+    }
+
+    // We now check with childs
+    float tminRight = 0;
+    bool intersectRight = child_right->box.intersect(ray, tminRight);
+    float tminLeft = 0;
+    bool intersectLeft = child_left->box.intersect(ray, tminLeft);
+    
+    if(!intersectLeft && !intersectRight) return false;
+    else if(!intersectRight) return child_left->fastIntersect(scenePtr, ray, tminLeft);
+    else if(!intersectLeft)  return child_right->fastIntersect(scenePtr, ray, tminRight);
+    else if(tminRight < tminLeft) {
+        bool intesect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
+        if (intesect_right) return true; // To make things faster
+        bool intesect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
+        return (intesect_left || intesect_right);
+    }
+    else {
+        bool intesect_left  = child_left->fastIntersect(scenePtr, ray, tminLeft);
+        if (intesect_left) return true; // To make things faster
+        bool intesect_right = child_right->fastIntersect(scenePtr, ray, tminRight);
+        return (intesect_left || intesect_right);
+    }
 }
