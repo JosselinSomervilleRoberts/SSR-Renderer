@@ -40,6 +40,7 @@ void ShaderProgram::loadShader (GLenum type, const std::string & shaderFilename)
 	std::string shaderSourceString = file2String (shaderFilename); // Loads the shader source from a file to a C++ string
 	const GLchar * shaderSource = (const GLchar *)shaderSourceString.c_str (); // Interface the C++ string through a C pointer
 	glShaderSource (shader, 1, &shaderSource, NULL); // Load the vertex shader source code
+	printOpenGLError("apres compilation shader");
 	glCompileShader (shader);  // THe GPU driver compile the shader
 	printOpenGLError("apres compilation shader");
 	glAttachShader (m_id, shader); // Set the vertex shader as the one ot be used with the program/pipeline

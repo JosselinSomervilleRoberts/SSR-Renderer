@@ -36,7 +36,7 @@ public:
 
 private:
 	GLuint genGPUBuffer (size_t elementSize, size_t numElements, const void * data);
-	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo);
+	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo);
 	GLuint toGPU (std::shared_ptr<Mesh> meshPtr);
 	void initScreeQuad ();
 	void draw (size_t meshId, size_t triangleCount);
@@ -50,5 +50,6 @@ private:
 	std::vector<GLuint> m_vaos;
 	std::vector<GLuint> m_posVbos;
 	std::vector<GLuint> m_normalVbos;
+	std::vector<GLuint> m_texCoordsVbos;
 	std::vector<GLuint> m_ibos;
 };

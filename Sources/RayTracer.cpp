@@ -165,7 +165,6 @@ glm::vec3 RayTracer::shade(const std::shared_ptr<Scene> scenePtr, RayHit& rayHit
 	const glm::vec3 vNormal = glm::normalize(rayHit.hitPosition(n1, n2, n0));
 	glm::vec3 fNormal = glm::normalize(glm::vec3(normalMat * glm::vec4 (normalize (vNormal), 1.0)));
 
-
 	const size_t numOfLightSourcesDir = scenePtr->numOfLightSourcesDir();
 	glm::vec3 r = glm::vec3(0., 0., 0.);
 	Ray rayOcclusion;

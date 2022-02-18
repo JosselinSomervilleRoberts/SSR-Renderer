@@ -38,6 +38,7 @@ uniform Material material;
 // IN - OUT
 layout(location=0) in vec3 fNormal; // Shader input, linearly interpolated by default from the previous stage (here the vertex shader)
 layout(location=1) in vec3 fPosition;
+layout(location=2) in vec2 fTexCoord;
 out vec4 colorResponse; // Shader output: the color response attached to this fragment
 
 
@@ -97,5 +98,11 @@ void main () {
 		r += get_r(lightDirection, Li, lightsourcesPoint[i].color);
 	}
 	
-	colorResponse = vec4 (r, 1.0); 
+	colorResponse = vec4 (r, 1.0);
+	int xx = int(fTexCoord[0] * 10.0f);
+	int yy = int(fTexCoord[1] * 10.0f);
+	if((xx + yy) % 2 == 0)
+		colorResponse = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	else if((xx + yy) % 2 == 1)
+		colorResponse = vec4(0.0f, 0.0f, 1.0f, 1.0f);
 }

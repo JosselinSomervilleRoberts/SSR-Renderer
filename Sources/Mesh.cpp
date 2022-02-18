@@ -46,6 +46,16 @@ void Mesh::recomputePerVertexNormals (bool angleBased) {
 
 void Mesh::clear () {
 	m_vertexPositions.clear ();
+	m_vertexTexCoords.clear ();
 	m_vertexNormals.clear ();
 	m_triangleIndices.clear ();
+}
+
+
+void Mesh::computePlanarParameterization() {
+	m_vertexTexCoords.clear ();
+	m_vertexTexCoords.resize (m_vertexPositions.size(), glm::vec2 (0.0, 0.0));
+
+	for(size_t i=0; i<m_vertexPositions.size(); i++)
+		m_vertexTexCoords[i] = 0.5f * glm::normalize(glm::vec2(m_vertexPositions[i].x, m_vertexPositions[i].y)) + glm::vec2(0.5f, 0.5f);
 }

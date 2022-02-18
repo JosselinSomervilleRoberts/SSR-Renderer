@@ -224,6 +224,7 @@ void initScene () {
 		exitOnCriticalError (std::string ("[Error loading mesh]") + e.what ());
 	}
 	meshPtr->computeBoundingSphere (center, meshScale);
+	meshPtr->computePlanarParameterization();
 	scenePtr->add (meshPtr);
 
 	// Light Sources
