@@ -29,6 +29,7 @@ add_executable (
 	Sources/ShaderProgram.h
 	Sources/ShaderProgram.cpp
 	Sources/Scene.h
+	Sources/Material.cpp
 	Sources/Material.h
 	Sources/Light/LightSourceDir.cpp
 	Sources/Light/LightSourceDir.h

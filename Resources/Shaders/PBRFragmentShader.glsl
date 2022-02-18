@@ -99,6 +99,8 @@ void main () {
 	}
 	
 	colorResponse = vec4 (r, 1.0);
+	colorResponse = vec4(vec3(fTexCoord, 0.0f), 1.0f);
+	
 	int xx = int(fTexCoord[0] * 10.0f);
 	int yy = int(fTexCoord[1] * 10.0f);
 	if((xx + yy) % 2 == 0)

@@ -28,6 +28,9 @@
     <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\ShaderProgram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourceDir.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

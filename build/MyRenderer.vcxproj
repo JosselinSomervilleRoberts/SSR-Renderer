@@ -390,6 +390,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\ShaderProgram.h" />
     <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\ShaderProgram.cpp" />
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Scene.h" />
+    <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Material.cpp" />
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Material.h" />
     <ClCompile Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourceDir.cpp" />
     <ClInclude Include="C:\Users\josse\Documents\INF584\INF584_MyRenderer\Sources\Light\LightSourceDir.h" />

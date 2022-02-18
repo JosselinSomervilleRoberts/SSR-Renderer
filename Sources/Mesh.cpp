@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <algorithm>
+#define PI 3.14159f
 
 using namespace std;
 
@@ -56,6 +57,16 @@ void Mesh::computePlanarParameterization() {
 	m_vertexTexCoords.clear ();
 	m_vertexTexCoords.resize (m_vertexPositions.size(), glm::vec2 (0.0, 0.0));
 
-	for(size_t i=0; i<m_vertexPositions.size(); i++)
-		m_vertexTexCoords[i] = 0.5f * glm::normalize(glm::vec2(m_vertexPositions[i].x, m_vertexPositions[i].y)) + glm::vec2(0.5f, 0.5f);
+	glm::vec3 center;
+	float radius;
+	computeBoundingSphere(center, radius);
+
+	for(size_t i=0; i<m_vertexPositions.size(); i++) {
+		glm::vec2 onCircle = glm::vec2(0.5f * (m_vertexPositions[i] - center) / radius);
+		float angle = std::atan2f(onCircle.y, onCircle.x);
+		glm::vec2 finalPos = onCircle;
+		if(((angle >= -PI/4.0f) && (angle <= PI/4.0f)) || (angle <= -3.0f*PI/4.0f) || (angle >= 3.0f*PI/4.0f))  onCircle /= pow(std::cos(angle), 2.0f);
+		else  onCircle /= pow(std::sin(angle), 2.0f);
+		m_vertexTexCoords[i] = glm::vec2(0.5f, 0.5f) + finalPos;
+	}
 }

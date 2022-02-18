@@ -1,13 +1,17 @@
 // Fichier Material.h
 #pragma once
 
-#include <iostream>
-
+#include <glad/glad.h>
+#include <string>
+#include <memory>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <GLFW/glfw3.h>
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtx/string_cast.hpp>
+#include <iostream>
+#include "stb_image.h"
 
 
 class Material {
@@ -24,6 +28,8 @@ public:
     inline void setRoughness (float roughness) { m_roughness = roughness; }
     inline float metallicness () const { return m_metallicness; }
     inline void setMetallicness (float metallicness) { m_metallicness = metallicness; }
+
+    GLuint loadTextureFromFileToGPU (const std::string & filename);
 
 private:
     glm::vec3 m_albedo;
