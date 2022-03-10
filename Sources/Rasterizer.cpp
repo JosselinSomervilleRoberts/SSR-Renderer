@@ -83,6 +83,126 @@ void Rasterizer::initDisplayedImage () {
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
 
+
+void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
+	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
+
+	std::shared_ptr<ShaderProgram> m_SSRFirstPassShaderProgramPtr;
+	std::string basePath = "C:\\Users\\josse\\Documents\\INF584\\INF584_MyRenderer\\Resources\\Shaders\\";
+	try {
+		m_SSRFirstPassShaderProgramPtr = ShaderProgram::genBasicShaderProgram (basePath + "SSRFirstPassVertexShader.glsl",
+													         	 	  			basePath + "SSRFirstPassFragmentShader.glsl");
+	} catch (std::exception & e) {
+		exitOnCriticalError (std::string ("[Error loading shader program]") + e.what ());
+	}
+
+	std::shared_ptr<ShaderProgram> m_SSRShaderProgramPtr;
+	try {
+		m_SSRShaderProgramPtr = ShaderProgram::genBasicShaderProgram (basePath + "SSRVertexShader.glsl",
+													         	 	  	basePath + "SSRFragmentShader.glsl");
+	} catch (std::exception & e) {
+		exitOnCriticalError (std::string ("[Error loading shader program]") + e.what ());
+	}
+
+	//std::cout << "Hey before use shader 1" << std::endl;
+	m_SSRFirstPassShaderProgramPtr->use();
+	//std::cout << "Hey after use shader 1" << std::endl;
+
+	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+	GLuint FramebufferName = 0;
+	glGenFramebuffers(1, &FramebufferName);
+	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+
+
+	// The texture we're going to render to
+	GLuint renderedTexture;
+	glGenTextures(1, &renderedTexture);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+
+	// Give an empty image to OpenGL ( the last "0" )
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
+	//glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, 1024, 768, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	// Poor filtering. Needed !
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+
+	// The depth buffer
+	GLuint depthrenderbuffer;
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+	// Set "renderedTexture" as our colour attachement #0
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+	// Set the list of draw buffers.
+	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+	// Always check that our framebuffer is ok
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	return;
+
+		// Render to our framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+	glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+
+	//std::cout << "Hey before render" << std::endl;
+	render(scenePtr);
+	//std::cout << "Hey after render" << std::endl;
+
+
+
+
+
+	
+	// Create and compile our GLSL program from the shaders
+	//std::cout << "Hey before use shader 2" << std::endl;
+	m_SSRShaderProgramPtr->use();
+	//std::cout << "Hey after use shader 2" << std::endl;
+
+
+
+	// The fullscreen quad's FBO
+	GLuint quad_VertexArrayID;
+	glGenVertexArrays(1, &quad_VertexArrayID);
+	glBindVertexArray(quad_VertexArrayID);
+
+	static const GLfloat g_quad_vertex_buffer_data[] = {
+		-1.0f, -1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		1.0f,  1.0f, 0.0f,
+	};
+	//std::cout << "Hey after def quad" << std::endl;
+
+	GLuint quad_vertexbuffer;
+	glGenBuffers(1, &quad_vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+	//std::cout << "Hey after gen array" << std::endl;
+
+	GLuint texID = glGetUniformLocation(m_SSRShaderProgramPtr->id(), "renderedTexture");
+	GLuint timeID = glGetUniformLocation(m_SSRShaderProgramPtr->id(), "time");
+
+	// Render to the screen
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+	glBindVertexArray (m_screenQuadVao); // Activate the VAO storing geometry data
+	glDrawElements (GL_TRIANGLES, static_cast<GLsizei> (6), GL_UNSIGNED_INT, 0);
+	m_SSRShaderProgramPtr->stop ();
+}
+
+
+
 // The main rendering call
 void Rasterizer::render (std::shared_ptr<Scene> scenePtr) {
 	const glm::vec3 & bgColor = scenePtr->backgroundColor ();

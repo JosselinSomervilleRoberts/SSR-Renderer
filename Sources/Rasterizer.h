@@ -34,6 +34,9 @@ public:
 	void display (std::shared_ptr<Image> imagePtr);
 	void clear ();
 
+	
+	void renderSSR (std::shared_ptr<Scene> scenePtr);
+
 private:
 	GLuint genGPUBuffer (size_t elementSize, size_t numElements, const void * data);
 	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo);

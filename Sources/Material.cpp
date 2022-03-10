@@ -1,7 +1,7 @@
 #include "Material.h"
 #include "stb_image.h"
 
-
+/*
 GLuint Material::loadTextureFromFileToGPU (const std::string & filename) {
     int width, height, numComponents;
 
@@ -37,4 +37,4 @@ GLuint Material::loadTextureFromFileToGPU (const std::string & filename) {
     stbi_image_free(data);
     glBindTexture (GL_TEXTURE_2D, 0);
     return texID;
-}
+}*/

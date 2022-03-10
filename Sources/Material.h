@@ -11,7 +11,6 @@
 
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
-#include "stb_image.h"
 
 
 class Material {
@@ -29,7 +28,7 @@ public:
     inline float metallicness () const { return m_metallicness; }
     inline void setMetallicness (float metallicness) { m_metallicness = metallicness; }
 
-    GLuint loadTextureFromFileToGPU (const std::string & filename);
+    //GLuint loadTextureFromFileToGPU (const std::string & filename);
 
 private:
     glm::vec3 m_albedo;

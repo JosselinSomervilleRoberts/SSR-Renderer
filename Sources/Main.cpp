@@ -269,7 +269,8 @@ void clear () {
 // The main rendering call
 void render () {
 	if (isDisplayRaytracing)
-		rasterizerPtr->display (rayTracerPtr->image ());
+		//rasterizerPtr->display (rayTracerPtr->image ());
+		rasterizerPtr->renderSSR (scenePtr);
 	else
 		rasterizerPtr->render (scenePtr);
 }
