@@ -34,10 +34,15 @@ public:
 	void display (std::shared_ptr<Image> imagePtr);
 	void clear ();
 
-	
+	// SSR
 	void renderSSR (std::shared_ptr<Scene> scenePtr);
+	void loadShaderProgramSSR (const std::string & basePath);
+	void renderQuadSSR();
+	void genGPUBufferSSR ();
+	void initScreenQuadSSR ();
 
-private:
+
+protected:
 	GLuint genGPUBuffer (size_t elementSize, size_t numElements, const void * data);
 	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo);
 	GLuint toGPU (std::shared_ptr<Mesh> meshPtr);
@@ -55,4 +60,16 @@ private:
 	std::vector<GLuint> m_normalVbos;
 	std::vector<GLuint> m_texCoordsVbos;
 	std::vector<GLuint> m_ibos;
+
+	// SSR
+	unsigned int SCR_WIDTH = 1024;
+    unsigned int SCR_HEIGHT = 768;
+
+    unsigned int quadVAO = 0;
+    unsigned int quadVBO;
+    unsigned int gPosition, gNormal, gAlbedoSpec;
+    unsigned int gBuffer;
+
+	std::shared_ptr<ShaderProgram> shaderFirstPass; // A GPU program contains at least a vertex shader and a fragment shader
+	std::shared_ptr<ShaderProgram> shaderSecondPass; // Full screen quad shader program, for displaying 2D color images
 };

@@ -20,10 +20,15 @@ void Rasterizer::init (const std::string & basePath, const std::shared_ptr<Scene
 	glDepthFunc (GL_LESS); // Specify the depth test for the z-buffer
 	glEnable (GL_DEPTH_TEST); // Enable the z-buffer test in the rasterization
 	glClearColor (0.0f, 0.0f, 0.0f, 1.0f); // specify the background color, used any time the framebuffer is cleared
+
 	// GPU resources
 	initScreeQuad ();
+	initScreenQuadSSR ();
 	loadShaderProgram (basePath);
+	loadShaderProgramSSR(basePath);
 	initDisplayedImage ();
+	genGPUBufferSSR();
+
 	// Allocate GPU ressources for the heavy data components of the scene 
 	size_t numOfMeshes = scenePtr->numOfMeshes ();
 	for (size_t i = 0; i < numOfMeshes; i++) 
@@ -32,6 +37,8 @@ void Rasterizer::init (const std::string & basePath, const std::shared_ptr<Scene
 
 void Rasterizer::setResolution (int width, int height)  {
 	glViewport (0, 0, (GLint)width, (GLint)height); // Dimension of the rendering region in the window
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
 }
 
 void Rasterizer::loadShaderProgram (const std::string & basePath) {
@@ -52,6 +59,30 @@ void Rasterizer::loadShaderProgram (const std::string & basePath) {
 	} catch (std::exception & e) {
 		exitOnCriticalError (std::string ("[Error loading display shader program]") + e.what ());
 	}
+}
+
+void Rasterizer::loadShaderProgramSSR (const std::string & basePath) {
+	shaderFirstPass.reset ();
+	try {
+		std::string shaderPath = basePath + "/" + SHADER_PATH;
+		shaderFirstPass = ShaderProgram::genBasicShaderProgram (shaderPath + "/SSRFirstPassVertexShader.glsl",
+													         	shaderPath + "/SSRFirstPassFragmentShader.glsl");
+	} catch (std::exception & e) {
+		exitOnCriticalError (std::string ("[Error loading First-pass shader program]") + e.what ());
+	}
+
+	shaderSecondPass.reset ();
+	try {
+		std::string shaderPath = basePath + "/" + SHADER_PATH;
+		shaderSecondPass = ShaderProgram::genBasicShaderProgram (shaderPath + "/SSRVertexShader.glsl",
+													         	 		  shaderPath + "/SSRFragmentShader.glsl");
+	} catch (std::exception & e) {
+		exitOnCriticalError (std::string ("[Error loading Second-pass display shader program]") + e.what ());
+	}
+
+    shaderSecondPass->set("gPosition", 0);
+    shaderSecondPass->set("gNormal", 1);
+    shaderSecondPass->set("gAlbedoSpec", 2);
 }
 
 void Rasterizer::updateDisplayedImageTexture (std::shared_ptr<Image> imagePtr) {
@@ -81,124 +112,6 @@ void Rasterizer::initDisplayedImage () {
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glBindTexture (GL_TEXTURE_2D, 0);
-}
-
-
-void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
-
-	std::shared_ptr<ShaderProgram> m_SSRFirstPassShaderProgramPtr;
-	std::string basePath = "C:\\Users\\josse\\Documents\\INF584\\INF584_MyRenderer\\Resources\\Shaders\\";
-	try {
-		m_SSRFirstPassShaderProgramPtr = ShaderProgram::genBasicShaderProgram (basePath + "SSRFirstPassVertexShader.glsl",
-													         	 	  			basePath + "SSRFirstPassFragmentShader.glsl");
-	} catch (std::exception & e) {
-		exitOnCriticalError (std::string ("[Error loading shader program]") + e.what ());
-	}
-
-	std::shared_ptr<ShaderProgram> m_SSRShaderProgramPtr;
-	try {
-		m_SSRShaderProgramPtr = ShaderProgram::genBasicShaderProgram (basePath + "SSRVertexShader.glsl",
-													         	 	  	basePath + "SSRFragmentShader.glsl");
-	} catch (std::exception & e) {
-		exitOnCriticalError (std::string ("[Error loading shader program]") + e.what ());
-	}
-
-	//std::cout << "Hey before use shader 1" << std::endl;
-	m_SSRFirstPassShaderProgramPtr->use();
-	//std::cout << "Hey after use shader 1" << std::endl;
-
-	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-	GLuint FramebufferName = 0;
-	glGenFramebuffers(1, &FramebufferName);
-	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-
-
-
-	// The texture we're going to render to
-	GLuint renderedTexture;
-	glGenTextures(1, &renderedTexture);
-
-	// "Bind" the newly created texture : all future texture functions will modify this texture
-	glBindTexture(GL_TEXTURE_2D, renderedTexture);
-
-	// Give an empty image to OpenGL ( the last "0" )
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, 1024, 768, 0,GL_RGB, GL_UNSIGNED_BYTE, 0);
-	//glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT24, 1024, 768, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-
-	// Poor filtering. Needed !
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-
-	// The depth buffer
-	GLuint depthrenderbuffer;
-	glGenRenderbuffers(1, &depthrenderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
-
-	// Set "renderedTexture" as our colour attachement #0
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-
-	// Set the list of draw buffers.
-	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-
-	// Always check that our framebuffer is ok
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	return;
-
-		// Render to our framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-	glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
-
-	//std::cout << "Hey before render" << std::endl;
-	render(scenePtr);
-	//std::cout << "Hey after render" << std::endl;
-
-
-
-
-
-	
-	// Create and compile our GLSL program from the shaders
-	//std::cout << "Hey before use shader 2" << std::endl;
-	m_SSRShaderProgramPtr->use();
-	//std::cout << "Hey after use shader 2" << std::endl;
-
-
-
-	// The fullscreen quad's FBO
-	GLuint quad_VertexArrayID;
-	glGenVertexArrays(1, &quad_VertexArrayID);
-	glBindVertexArray(quad_VertexArrayID);
-
-	static const GLfloat g_quad_vertex_buffer_data[] = {
-		-1.0f, -1.0f, 0.0f,
-		1.0f, -1.0f, 0.0f,
-		-1.0f,  1.0f, 0.0f,
-		-1.0f,  1.0f, 0.0f,
-		1.0f, -1.0f, 0.0f,
-		1.0f,  1.0f, 0.0f,
-	};
-	//std::cout << "Hey after def quad" << std::endl;
-
-	GLuint quad_vertexbuffer;
-	glGenBuffers(1, &quad_vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
-	//std::cout << "Hey after gen array" << std::endl;
-
-	GLuint texID = glGetUniformLocation(m_SSRShaderProgramPtr->id(), "renderedTexture");
-	GLuint timeID = glGetUniformLocation(m_SSRShaderProgramPtr->id(), "time");
-
-	// Render to the screen
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0,0,1024,768); // Render on the whole framebuffer, complete from the lower left corner to the upper right
-	glBindVertexArray (m_screenQuadVao); // Activate the VAO storing geometry data
-	glDrawElements (GL_TRIANGLES, static_cast<GLsizei> (6), GL_UNSIGNED_INT, 0);
-	m_SSRShaderProgramPtr->stop ();
 }
 
 
@@ -272,6 +185,80 @@ void Rasterizer::render (std::shared_ptr<Scene> scenePtr) {
 	
 }
 
+
+void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
+    // render
+        // ------
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // 1. geometry pass: render scene's geometry/color data into gbuffer
+        // -----------------------------------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Set up matrices
+        shaderFirstPass->use();
+        glm::mat4 projectionMatrix = scenePtr->camera()->computeProjectionMatrix ();
+		shaderFirstPass->set ("projectionMat", projectionMatrix); // Compute the projection matrix of the camera and pass it to the GPU program
+		glm::mat4 viewMatrix = scenePtr->camera()->computeViewMatrix ();
+		shaderFirstPass->set ("viewMat", viewMatrix);
+
+        // Meshes
+        size_t numOfMeshes = scenePtr->numOfMeshes ();
+        for (size_t i = 0; i < numOfMeshes; i++) {
+            glm::mat4 modelMatrix = scenePtr->mesh (i)->computeTransformMatrix ();
+            glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
+            glm::mat4 normalMatrix = glm::transpose (glm::inverse (modelViewMatrix));
+            shaderFirstPass->set ("modelViewMat", modelViewMatrix);
+            shaderFirstPass->set ("normalMat", normalMatrix);
+
+            // Material
+            // size_t materialIndex = scenePtr->getMaterialOfMesh(0);
+            // auto materialPtr = scenePtr->material(materialIndex);
+            // m_pbrShaderProgramPtr->set ("material.albedo", materialPtr->albedo ());
+            //m_pbrShaderProgramPtr->set ("material.roughness", materialPtr->roughness ());
+            // m_pbrShaderProgramPtr->set ("material.metallicness", materialPtr->metallicness ());
+
+            draw (i, scenePtr->mesh (i)->triangleIndices().size ());
+        }
+
+        
+		
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // 2. lighting pass: calculate lighting by iterating over a screen filled quad pixel-by-pixel using the gbuffer's content.
+        // -----------------------------------------------------------------------------------------------------------------------
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        shaderSecondPass->use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gPosition);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gNormal);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+        // send light relevant uniforms
+        /*
+        for (unsigned int i = 0; i < lightPositions.size(); i++)
+        {
+            shaderLightingPass.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
+            shaderLightingPass.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
+            // update attenuation parameters and calculate radius
+            const float constant = 1.0f; // note that we don't send this to the shader, we assume it is always 1.0 (in our case)
+            const float linear = 0.7f;
+            const float quadratic = 1.8f;
+            shaderLightingPass.setFloat("lights[" + std::to_string(i) + "].Linear", linear);
+            shaderLightingPass.setFloat("lights[" + std::to_string(i) + "].Quadratic", quadratic);
+            // then calculate radius of light volume/sphere
+            const float maxBrightness = std::fmaxf(std::fmaxf(lightColors[i].r, lightColors[i].g), lightColors[i].b);
+            float radius = (-linear + std::sqrt(linear * linear - 4 * quadratic * (constant - (256.0f / 5.0f) * maxBrightness))) / (2.0f * quadratic);
+            shaderLightingPass.setFloat("lights[" + std::to_string(i) + "].Radius", radius);
+        }*/
+        //shaderLightingPass.setVec3("viewPos", camera.Position);
+        // finally render quad
+        renderQuadSSR();
+}
+
 void Rasterizer::display (std::shared_ptr<Image> imagePtr) {
 	updateDisplayedImageTexture (imagePtr);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
@@ -320,6 +307,55 @@ GLuint Rasterizer::genGPUBuffer (size_t elementSize, size_t numElements, const v
 	return vbo;
 }
 
+
+void Rasterizer::genGPUBufferSSR () {
+    // configure g-buffer framebuffer
+    // ------------------------------
+    glGenFramebuffers(1, &gBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+    // position color buffer
+    glGenTextures(1, &gPosition);
+    glBindTexture(GL_TEXTURE_2D, gPosition);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+    // normal color buffer
+    glGenTextures(1, &gNormal);
+    glBindTexture(GL_TEXTURE_2D, gNormal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+    // color + specular color buffer
+    glGenTextures(1, &gAlbedoSpec);
+    glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
+
+    // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+    unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, attachments);
+
+    // create and attach depth buffer (renderbuffer)
+    unsigned int rboDepth;
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+    // finally check if framebuffer is complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
 GLuint Rasterizer::genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo) {
 	GLuint vao;
 	glCreateVertexArrays (1, &vao); // Create a single handle that joins together attributes (vertex positions, normals) and connectivity (triangles indices)
@@ -362,6 +398,35 @@ void Rasterizer::initScreeQuad () {
 		false,
 		0
 	);
+}
+
+void Rasterizer::initScreenQuadSSR () {
+    float quadVertices[] = {
+        // positions        // texture Coords
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+         1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+    };
+
+    // setup plane VAO
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+}
+
+void Rasterizer::renderQuadSSR()
+{
+    if (quadVAO == 0) initScreenQuadSSR();
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
 
 void Rasterizer::draw (size_t meshId, size_t triangleCount) {

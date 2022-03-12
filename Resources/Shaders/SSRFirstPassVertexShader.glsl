@@ -6,15 +6,17 @@ layout(location=2) in vec2 vTexCoord;
 
 uniform mat4 projectionMat, modelViewMat, normalMat; // Uniform variables, set from the CPU-side main program
 
-out vec3 fNormal;
-out vec3 fPosition;
-out vec2 fTexCoord;
+out vec3 FragPos;
+out vec2 TexCoords;
+out vec3 Normal;
 
 void main() {
 	vec4 p = modelViewMat * vec4 (vPosition, 1.0);
-    gl_Position =  projectionMat * p; // mandatory to fire rasterization properly
     vec4 n = normalMat * vec4 (normalize (vNormal), 1.0);
-    fNormal = normalize (n.xyz);
-    fPosition = p.xyz;
-    fTexCoord = vTexCoord;
+    
+    Normal = normalize (n.xyz);
+    FragPos = p.xyz;
+    TexCoords = vTexCoord;
+    
+    gl_Position =  projectionMat * p; // mandatory to fire rasterization properly
 }
