@@ -8,5 +8,4 @@ out vec2 TexCoords;
 void main() {
     TexCoords = vTexCoords;
     gl_Position =  vec4 (vPosition, 1.0);; // mandatory to fire rasterization properly
-    //fTexCoord = vPosition.xy/2.0 + vec2 (0.5);
 }
