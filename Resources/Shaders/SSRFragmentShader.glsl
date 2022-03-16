@@ -64,24 +64,14 @@ vec3 get_r(vec3 position, vec3 normal, vec3 lightDirection, float lightIntensity
 float minVec3(vec3 v) { return min(v.x, min(v.y, v.z)); }
 float maxVec3(vec3 v) { return max(v.x, max(v.y, v.z)); }
 
+Ray TraceRay(vec2 uv);
+Ray BinarySearch(Ray ray, float depth);
 
-int maxSteps = 700;
-float SSRinitialStepAmount = 0.003f;
+int maxSteps = 60;
+int binarySearchSteps = 5;
+float SSRinitialStep = 0.01f;
+float SSRstep = 0.05f;
 
-/*
-vec3 calcViewPosition(in vec2 texCoord) {
-    // Combine UV & depth into XY & Z (NDC)
-    vec3 rawPosition = vec3(texCoord, getDepth(texCoord));
-
-    // Convert from (0, 1) range to (-1, 1)
-    vec4 ScreenSpacePosition = vec4(rawPosition * 2 - 1, 1);
-
-    // Undo Perspective transformation to bring into view space
-    vec4 ViewPosition = inv_projection * ScreenSpacePosition;
-
-    // Perform perspective divide and return
-    return ViewPosition.xyz / ViewPosition.w;
-}*/
 
 Ray TraceRay(vec2 uv) {
 	Ray ray;
@@ -96,29 +86,50 @@ Ray TraceRay(vec2 uv) {
     ray.out_col = vec3(0.0);
 	ray.hit = false;
 	ray.steps = 0;
+	ray.currPos = ray.o + ray.d * SSRinitialStep;
 
 	while(ray.steps < maxSteps)
 	{
 		// Advance in the ray
+		ray.currPos += ray.d * SSRstep;
 		ray.steps++;
-		ray.currPos = ray.o + ray.steps * ray.d * SSRinitialStepAmount;
 		float rayDepth = length(ray.currPos);
 
 		// Get the depth
 		vec2 pixelUV = getUV(ray.currPos);
 		float pixelDepth = getDepth(pixelUV);
 
-		if(abs(pixelDepth - rayDepth) < 0.01f) {
-			ray.out_col = getAlbedo(pixelUV);
-			//if (length(ray.out_col) > 0.05f) {
-				ray.hit = true;
-				ray.uv = pixelUV;
-				return ray;
-			//}
+		if(abs(pixelDepth - rayDepth) < 0.5f * SSRstep) {
+			if(diagnostic == 7) ray = BinarySearch(ray, pixelDepth);
+			ray.uv = getUV(ray.currPos);
+			ray.out_col = getAlbedo(ray.uv);
+			ray.hit = true;
+			return ray;
 		}
 	}
 
     return ray;
+}
+
+Ray BinarySearch(Ray ray, float depth) {
+	float coeff = SSRstep;
+	float dDepth;
+	float rayDepth;
+
+	for (int i=0; i<binarySearchSteps; i++) {
+		coeff *= 0.5f;
+		rayDepth = length(ray.currPos);
+		vec2 pixelUV = getUV(ray.currPos);
+		float pixelDepth = getDepth(pixelUV);
+		dDepth = pixelDepth - rayDepth;
+
+		if (dDepth > 0.0f)
+			ray.currPos += ray.d * coeff;
+		else
+			ray.currPos -= ray.d * coeff;
+	}
+
+	return ray;
 }
 
 float getDepth(vec2 coords) {

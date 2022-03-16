@@ -140,6 +140,8 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			diagnostic = 5;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F6) {
 			diagnostic = 6;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F7) {
+			diagnostic = 7;
 		} else {
 			printHelp ();
 		}
