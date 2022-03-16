@@ -2,6 +2,7 @@
 
 #define PI 3.1415
 
+uniform int diagnostic = 1;
 uniform mat4 normalMat, modelViewMat;
 
 // Lights
@@ -98,7 +99,23 @@ void main () {
 		r += get_r(lightDirection, Li, lightsourcesPoint[i].color);
 	}
 	
-	colorResponse = vec4 (r, 1.0);
+	if (diagnostic == 1)
+		colorResponse = vec4 (r, 1.0);
+	else if(diagnostic == 2)
+		colorResponse = vec4 (normalize(fNormal), 1.0);
+	else if(diagnostic == 3)
+		colorResponse = vec4(material.albedo, 1);
+	else if(diagnostic == 4) {
+		int xx = int(fTexCoord[0] * 10.0f);
+		int yy = int(fTexCoord[1] * 10.0f);
+		if((xx + yy) % 2 == 0)
+			colorResponse = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		else if((xx + yy) % 2 == 1)
+			colorResponse = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	}
+	else {
+		colorResponse = vec4(1,0,0,1);
+	}
 
 	/*
 	colorResponse = vec4(vec3(fTexCoord, 0.0f), 1.0f);

@@ -43,6 +43,8 @@ add_executable (
 	Sources/BVH/AABBox.h
 	Sources/BVH/BVH.cpp
 	Sources/BVH/BVH.h
+	Sources/BoundingBox.cpp
+	Sources/BoundingBox.h
 )
 
 set_target_properties(MyRenderer PROPERTIES
