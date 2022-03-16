@@ -16,6 +16,7 @@
 #include <glm/ext.hpp>
 
 #include "Transform.h"
+#include "BoundingBox.h"
 
 class Mesh : public Transform {
 public:
@@ -32,6 +33,8 @@ public:
 
 	/// Compute the parameters of a sphere which bounds the mesh
 	void computeBoundingSphere (glm::vec3 & center, float & radius) const;
+	
+	BoundingBox computeBoundingBox () const;
 	
 	void recomputePerVertexNormals (bool angleBased = false);
 

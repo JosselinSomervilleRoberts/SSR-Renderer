@@ -20,6 +20,17 @@ Mesh::~Mesh () {
 	clear ();
 }
 
+BoundingBox Mesh::computeBoundingBox () const {
+	BoundingBox bbox;
+	for (size_t i = 0; i < m_vertexPositions.size (); i++) {
+		if (i == 0)
+			bbox.init (m_vertexPositions[i]);
+		else
+			bbox.extendTo (m_vertexPositions[i]);
+	}
+	return bbox;
+}
+
 void Mesh::computeBoundingSphere (glm::vec3 & center, float & radius) const {
 	center = glm::vec3 (0.0);
 	radius = 0.f;

@@ -63,6 +63,9 @@ static std::string meshFilename;
 // Raytraced rendering
 static bool isDisplayRaytracing (false);
 
+// Diagnostic
+static int diagnostic = 1;
+
 void clear ();
 
 void printHelp () {
@@ -81,7 +84,15 @@ void printHelp () {
    			  + "\t* SPACE: execute ray tracing\n"
 		      + "\t* A: enable/disable acceleration ray tracing with BVH\n"
 		      + "\t* O: enable/disable occlusion in ray tracing\n"
-		      + "\t* P: enable/disable anti-aliasing in ray tracing\n");
+		      + "\t* P: enable/disable anti-aliasing in ray tracing\n"
+		      + "\n"
+		      + "\n Diagnostic:\n"
+		      + "\t* F1: render\n"
+		      + "\t* F2: normal\n"
+		      + "\t* F3: albedo\n"
+		      + "\t* F4: tex coordinates\n"
+		      + "\t* F5: (SSR) reflected\n"
+		      + "\t* F6: (SSR) reflect hit\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.
@@ -117,6 +128,18 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			//if(isDisplayRaytracing) rayTracerPtr->render (scenePtr);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_SPACE) {
 			raytrace ();
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F1) {
+			diagnostic = 1;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F2) {
+			diagnostic = 2;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F3) {
+			diagnostic = 3;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F4) {
+			diagnostic = 4;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F5) {
+			diagnostic = 5;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F6) {
+			diagnostic = 6;
 		} else {
 			printHelp ();
 		}
@@ -212,10 +235,6 @@ void initScene () {
 	scenePtr = std::make_shared<Scene> ();
 	scenePtr->setBackgroundColor (glm::vec3 (0.1f, 0.5f, 0.95f));
 
-	// Material
-	auto materialPtr = std::make_shared<Material> ();
-	scenePtr->addMaterial(materialPtr);
-
 	// Mesh
 	auto meshPtr = std::make_shared<Mesh> ();
 	try {
@@ -225,7 +244,45 @@ void initScene () {
 	}
 	meshPtr->computeBoundingSphere (center, meshScale);
 	meshPtr->computePlanarParameterization();
-	scenePtr->add (meshPtr);
+	BoundingBox bbox = meshPtr->computeBoundingBox ();
+    auto meshMaterialPtr = std::make_shared<Material> (glm::vec3 (0, 1, 0), 0.3, 0.0);
+    scenePtr->add (meshPtr);
+    scenePtr->addMaterial (meshMaterialPtr);
+	scenePtr->setMaterialToMesh (0, 0);
+	std::cout << meshFilename << std::endl;
+
+	
+	// Adding a ground adapted to the loaded model
+	std::shared_ptr<Mesh> groundMeshPtr = std::make_shared<Mesh> ();
+	float extent = bbox.size ();
+	glm::vec3 startP = bbox.center () + glm::vec3 (-extent, -bbox.height()/2.f, -extent);
+	groundMeshPtr->vertexPositions().push_back (startP); 
+	groundMeshPtr->vertexPositions().push_back (startP + glm::vec3 (0.f, 0.f, 2.f*extent));
+	groundMeshPtr->vertexPositions().push_back (startP + glm::vec3 (2.f*extent, 0.f, 2.f*extent));
+	groundMeshPtr->vertexPositions().push_back (startP + glm::vec3 (2.f*extent, 0.f, 0.f));
+	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
+	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
+	groundMeshPtr->recomputePerVertexNormals ();
+    auto groundMaterialPtr = std::make_shared<Material> (glm::vec3 (0.6, 0.6, 0.6f), 0.6, 0.6);
+    scenePtr->add (groundMeshPtr);
+    scenePtr->addMaterial (groundMaterialPtr);
+	scenePtr->setMaterialToMesh (1, 1);
+
+	// Adding a wall adapted to the loaded model
+
+	std::shared_ptr<Mesh> wallMeshPtr = std::make_shared<Mesh> ();
+	startP = bbox.center () + glm::vec3 (-extent, -bbox.height()/2.f, -extent);
+	wallMeshPtr->vertexPositions().push_back (startP); 
+	wallMeshPtr->vertexPositions().push_back (startP + glm::vec3 (2.f*extent, 0.f, 0.f));
+	wallMeshPtr->vertexPositions().push_back (startP + glm::vec3 (2.f*extent, 2.f*extent, 0.f));
+	wallMeshPtr->vertexPositions().push_back (startP + glm::vec3 (0.f, 2.f*extent, 0.f));
+	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
+	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
+	wallMeshPtr->recomputePerVertexNormals ();
+    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.3, 0.2);
+    scenePtr->add (wallMeshPtr);
+    scenePtr->addMaterial (wallMaterialPtr);
+	scenePtr->setMaterialToMesh (2, 2);
 
 	// Light Sources
 	//auto lightPtr = std::make_shared<LightSourceDir> ();
@@ -270,9 +327,9 @@ void clear () {
 void render () {
 	if (isDisplayRaytracing)
 		//rasterizerPtr->display (rayTracerPtr->image ());
-		rasterizerPtr->renderSSR (scenePtr);
+		rasterizerPtr->renderSSR (scenePtr, diagnostic);
 	else
-		rasterizerPtr->render (scenePtr);
+		rasterizerPtr->render (scenePtr, diagnostic);
 }
 
 // Update any accessible variable based on the current time

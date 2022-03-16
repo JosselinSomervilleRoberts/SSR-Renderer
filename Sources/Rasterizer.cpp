@@ -31,8 +31,9 @@ void Rasterizer::init (const std::string & basePath, const std::shared_ptr<Scene
 
 	// Allocate GPU ressources for the heavy data components of the scene 
 	size_t numOfMeshes = scenePtr->numOfMeshes ();
-	for (size_t i = 0; i < numOfMeshes; i++) 
+	for (size_t i = 0; i < numOfMeshes; i++) {
 		m_vaos.push_back (toGPU (scenePtr->mesh (i)));
+	}
 }
 
 void Rasterizer::setResolution (int width, int height)  {
@@ -115,38 +116,52 @@ void Rasterizer::initDisplayedImage () {
 }
 
 
-
-// The main rendering call
-void Rasterizer::render (std::shared_ptr<Scene> scenePtr) {
-	const glm::vec3 & bgColor = scenePtr->backgroundColor ();
-	glClearColor (bgColor[0], bgColor[1], bgColor[2], 1.f);
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
-	
-
+void Rasterizer::setLights(std::shared_ptr<ShaderProgram> shader, const std::shared_ptr<Scene> scenePtr) {
 	// Light Source - DIRECTIONNAL
 	size_t numOfLightSourcesDir = scenePtr->numOfLightSourcesDir();
 	for(size_t i=0; i<numOfLightSourcesDir; i++) {
 		auto lightSourcePtr = scenePtr->lightSourceDir(i);
-		m_pbrShaderProgramPtr->set ("lightsourcesDir[" + std::to_string(i) + "].direction", lightSourcePtr->direction);
-		m_pbrShaderProgramPtr->set ("lightsourcesDir[" + std::to_string(i) + "].intensity", lightSourcePtr->intensity);
-		m_pbrShaderProgramPtr->set ("lightsourcesDir[" + std::to_string(i) + "].color", lightSourcePtr->color);
+		shader->set ("lightsourcesDir[" + std::to_string(i) + "].direction", lightSourcePtr->direction);
+		shader->set ("lightsourcesDir[" + std::to_string(i) + "].intensity", lightSourcePtr->intensity);
+		shader->set ("lightsourcesDir[" + std::to_string(i) + "].color", lightSourcePtr->color);
 	}
-	m_pbrShaderProgramPtr->set ("nb_lightsourcesDir", (int)(numOfLightSourcesDir));
+	shader->set ("nb_lightsourcesDir", (int)(numOfLightSourcesDir));
 
 
 	// Light Source - PONCTUAL
 	size_t numOfLightSourcesPoint = scenePtr->numOflightSourcesPoint();
 	for(size_t i=0; i<numOfLightSourcesPoint; i++) {
 		auto lightSourcePtr = scenePtr->lightSourcePoint(i);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].position", lightSourcePtr->position);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].intensity", lightSourcePtr->intensity);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].color", lightSourcePtr->color);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].a_c", lightSourcePtr->a_c);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].a_l", lightSourcePtr->a_l);
-		m_pbrShaderProgramPtr->set ("lightsourcesPoint[" + std::to_string(i) + "].a_q", lightSourcePtr->a_q);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].position", lightSourcePtr->position);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].intensity", lightSourcePtr->intensity);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].color", lightSourcePtr->color);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].a_c", lightSourcePtr->a_c);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].a_l", lightSourcePtr->a_l);
+		shader->set ("lightsourcesPoint[" + std::to_string(i) + "].a_q", lightSourcePtr->a_q);
 	}
-	m_pbrShaderProgramPtr->set ("nb_lightsourcesPoint", (int)(numOfLightSourcesPoint));
+	shader->set ("nb_lightsourcesPoint", (int)(numOfLightSourcesPoint));
+}
 
+
+void Rasterizer::setMaterial(std::shared_ptr<ShaderProgram> shader, const std::shared_ptr<Scene> scenePtr, size_t mesh_index) {
+	// Material
+    size_t materialIndex = scenePtr->getMaterialOfMesh(mesh_index);
+    auto materialPtr = scenePtr->material(materialIndex);
+    shader->set ("material.albedo", materialPtr->albedo ());
+    shader->set ("material.roughness", materialPtr->roughness ());
+    shader->set ("material.metallicness", materialPtr->metallicness ());
+}
+
+
+// The main rendering call
+void Rasterizer::render (std::shared_ptr<Scene> scenePtr, int diagnostic) {
+	const glm::vec3 & bgColor = scenePtr->backgroundColor ();
+	glClearColor (bgColor[0], bgColor[1], bgColor[2], 1.f);
+	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
+	m_pbrShaderProgramPtr->set ("diagnostic", diagnostic);
+
+
+	setLights(m_pbrShaderProgramPtr, scenePtr);
 
 	// Meshes
 	size_t numOfMeshes = scenePtr->numOfMeshes ();
@@ -161,32 +176,15 @@ void Rasterizer::render (std::shared_ptr<Scene> scenePtr) {
 		m_pbrShaderProgramPtr->set ("modelViewMat", modelViewMatrix);
 		m_pbrShaderProgramPtr->set ("normalMat", normalMatrix);
 
-		// Material
-		size_t materialIndex = scenePtr->getMaterialOfMesh(0);
-		auto materialPtr = scenePtr->material(materialIndex);
-		m_pbrShaderProgramPtr->set ("material.albedo", materialPtr->albedo ());
-		m_pbrShaderProgramPtr->set ("material.roughness", materialPtr->roughness ());
-		m_pbrShaderProgramPtr->set ("material.metallicness", materialPtr->metallicness ());
-
+		setMaterial(m_pbrShaderProgramPtr, scenePtr, i);
 		draw (i, scenePtr->mesh (i)->triangleIndices().size ());
 	}
 
-	/*
-	size_t numOfMaterials = scenePtr->numOfMaterials ();
-	for (size_t i = 0; i < numOfMaterials; i++) {
-		auto materialPtr = scenePtr->material(i);
-
-		m_pbrShaderProgramPtr->set ("material.albedo", materialPtr->albedo ());
-		m_pbrShaderProgramPtr->set ("material.roughness", materialPtr->roughness ());
-		m_pbrShaderProgramPtr->set ("material.metallicness", materialPtr->metallicness ());
-	}*/
-
 	m_pbrShaderProgramPtr->stop ();
-	
 }
 
 
-void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
+void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr, int diagnostic) {
     // render
         // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -210,17 +208,13 @@ void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
             glm::mat4 modelMatrix = scenePtr->mesh (i)->computeTransformMatrix ();
             glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
             glm::mat4 normalMatrix = glm::transpose (glm::inverse (modelViewMatrix));
+            glm::mat4 invView = glm::inverse (viewMatrix);
             shaderFirstPass->set ("modelMat", modelMatrix);
             shaderFirstPass->set ("modelViewMat", modelViewMatrix);
             shaderFirstPass->set ("normalMat", normalMatrix);
+            shaderFirstPass->set ("invView", invView);
 
-            // Material
-            // size_t materialIndex = scenePtr->getMaterialOfMesh(0);
-            // auto materialPtr = scenePtr->material(materialIndex);
-            // m_pbrShaderProgramPtr->set ("material.albedo", materialPtr->albedo ());
-            //m_pbrShaderProgramPtr->set ("material.roughness", materialPtr->roughness ());
-            // m_pbrShaderProgramPtr->set ("material.metallicness", materialPtr->metallicness ());
-
+            setMaterial(shaderFirstPass, scenePtr, i);
             draw (i, scenePtr->mesh (i)->triangleIndices().size ());
         }
 
@@ -230,9 +224,15 @@ void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr) {
 
         // 2. lighting pass: calculate lighting by iterating over a screen filled quad pixel-by-pixel using the gbuffer's content.
         // -----------------------------------------------------------------------------------------------------------------------
+        glm::mat4 modelMatrix = scenePtr->mesh (0)->computeTransformMatrix ();
+        glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
+        glm::mat4 normalMatrix = glm::transpose (glm::inverse (modelViewMatrix));
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shaderSecondPass->use();
+		shaderSecondPass->set ("diagnostic", diagnostic);
 		shaderSecondPass->set ("projectionMat", projectionMatrix); // Compute the projection matrix of the camera and pass it to the GPU program
+        shaderSecondPass->set ("normalMat", normalMatrix);
+		setLights(shaderSecondPass, scenePtr);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gPosition);
         glActiveTexture(GL_TEXTURE1);
@@ -360,7 +360,7 @@ void Rasterizer::genGPUBufferSSR () {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-
+/*
 GLuint Rasterizer::genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo) {
 	GLuint vao;
 	glCreateVertexArrays (1, &vao); // Create a single handle that joins together attributes (vertex positions, normals) and connectivity (triangles indices)
@@ -391,8 +391,35 @@ GLuint Rasterizer::toGPU (std::shared_ptr<Mesh> meshPtr) {
 	GLuint ibo = genGPUBuffer (sizeof (glm::uvec3), meshPtr->triangleIndices().size(), meshPtr->triangleIndices().data ()); // triangle GPU index buffer
 	GLuint vao = genGPUVertexArray (posVbo, ibo, true, normalVbo, texPosVbo);
 	return vao;
+}*/
+GLuint Rasterizer::genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo) {
+	GLuint vao;
+	glGenVertexArrays (1, &vao); // Create a single handle that joins together attributes (vertex positions, normals) and connectivity (triangles indices)
+	glBindVertexArray (vao);
+	glEnableVertexAttribArray (0);
+	glBindBuffer (GL_ARRAY_BUFFER, posVbo);
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof (GLfloat), 0);
+	GLuint attrib = 1;
+	if (hasNormals) {
+		glEnableVertexAttribArray (attrib);
+		glBindBuffer (GL_ARRAY_BUFFER, normalVbo);
+		glVertexAttribPointer (attrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof (GLfloat), 0);
+		attrib++; // Replicate this strategy for more vertex attributes
+	}
+	glBindBuffer (GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBindVertexArray (0); // Desactive the VAO just created. Will be activated at rendering time.
+	return vao;
 }
 
+GLuint Rasterizer::toGPU (std::shared_ptr<Mesh> meshPtr) {
+	GLuint posVbo = genGPUBuffer (3 * sizeof (float), meshPtr->vertexPositions().size(), meshPtr->vertexPositions().data ()); // Position GPU vertex buffer
+	GLuint normalVbo = genGPUBuffer (3 * sizeof (float), meshPtr->vertexNormals().size(), meshPtr->vertexNormals().data ()); // Normal GPU vertex buffer
+	GLuint ibo = genGPUBuffer (sizeof (glm::uvec3), meshPtr->triangleIndices().size(), meshPtr->triangleIndices().data ()); // triangle GPU index buffer
+	GLuint vao = genGPUVertexArray (posVbo, ibo, true, normalVbo);
+	return vao;
+}
+
+/*
 void Rasterizer::initScreeQuad () {
 	std::vector<float> pData = {-1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0, -1.0, 1.0, 0.0};
 	std::vector<unsigned int> iData = {0, 1, 2, 0, 2, 3};
@@ -403,6 +430,17 @@ void Rasterizer::initScreeQuad () {
 		false,
 		0
 	);
+}*/
+
+void Rasterizer::initScreeQuad () {
+	std::vector<float> pData = {-1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0, -1.0, 1.0, 0.0};
+	std::vector<float> uvData = {0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0};
+	std::vector<unsigned int> iData = {0, 1, 2, 0, 2, 3};
+	m_screenQuadVao = genGPUVertexArray (
+		genGPUBuffer (3*sizeof(float), 4, pData.data()),
+		genGPUBuffer (3*sizeof(unsigned int), 2, iData.data()),
+		false,
+		0);
 }
 
 void Rasterizer::initScreenQuadSSR () {

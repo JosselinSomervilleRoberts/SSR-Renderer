@@ -28,14 +28,19 @@ public:
 	void setResolution (int width, int height);
 	void updateDisplayedImageTexture (std::shared_ptr<Image> imagePtr);
 	void initDisplayedImage ();
+
 	/// Loads and compile the programmable shader pipeline
 	void loadShaderProgram (const std::string & basePath);
-	void render (std::shared_ptr<Scene> scenePtr);
+	void render (std::shared_ptr<Scene> scenePtr, int diagnostic = 1);
 	void display (std::shared_ptr<Image> imagePtr);
 	void clear ();
 
+	// Send uniforms
+	void setLights(std::shared_ptr<ShaderProgram> shader, const std::shared_ptr<Scene> scenePtr);
+	void setMaterial(std::shared_ptr<ShaderProgram> shader, const std::shared_ptr<Scene> scenePtr, size_t mesh_index);
+
 	// SSR
-	void renderSSR (std::shared_ptr<Scene> scenePtr);
+	void renderSSR (std::shared_ptr<Scene> scenePtr, int diagnostic = 1);
 	void loadShaderProgramSSR (const std::string & basePath);
 	void renderQuadSSR();
 	void genGPUBufferSSR ();
@@ -44,7 +49,8 @@ public:
 
 protected:
 	GLuint genGPUBuffer (size_t elementSize, size_t numElements, const void * data);
-	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo);
+	//GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo, GLuint texCoordsVbo);
+	GLuint genGPUVertexArray (GLuint posVbo, GLuint ibo, bool hasNormals, GLuint normalVbo);
 	GLuint toGPU (std::shared_ptr<Mesh> meshPtr);
 	void initScreeQuad ();
 	void draw (size_t meshId, size_t triangleCount);

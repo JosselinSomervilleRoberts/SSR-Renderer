@@ -23,8 +23,8 @@
 class Scene {
 public:
 	inline Scene () : m_backgroundColor (0.f, 0.f ,0.f) {
-		auto materialPtr = std::make_shared<Material> ();
-		this->addMaterial(materialPtr);
+		//auto materialPtr = std::make_shared<Material> ();
+		//this->addMaterial(materialPtr);
 	}
 	virtual ~Scene() {}
 

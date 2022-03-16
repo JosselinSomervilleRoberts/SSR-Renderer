@@ -39,6 +39,7 @@ struct Ray
 	vec3 d;
 	vec3 currPos;
 	int steps;
+	vec2 uv;
 
 	vec3 out_col;
 	bool hit;
@@ -64,8 +65,8 @@ float minVec3(vec3 v) { return min(v.x, min(v.y, v.z)); }
 float maxVec3(vec3 v) { return max(v.x, max(v.y, v.z)); }
 
 
-int maxSteps = 200;
-float SSRinitialStepAmount = 0.01f;
+int maxSteps = 700;
+float SSRinitialStepAmount = 0.003f;
 
 /*
 vec3 calcViewPosition(in vec2 texCoord) {
@@ -108,9 +109,12 @@ Ray TraceRay(vec2 uv) {
 		float pixelDepth = getDepth(pixelUV);
 
 		if(abs(pixelDepth - rayDepth) < 0.01f) {
-			ray.hit = true;
 			ray.out_col = getAlbedo(pixelUV);
-			return ray;
+			//if (length(ray.out_col) > 0.05f) {
+				ray.hit = true;
+				ray.uv = pixelUV;
+				return ray;
+			//}
 		}
 	}
 
@@ -190,17 +194,12 @@ vec3 get_r(vec3 position, vec3 normal, vec3 lightDirection, float lightIntensity
 	return luminosity * (fd + fs) * scalarProd;
 }
 
-
-void main () {
-    vec2 coordsUV = TexCoords;
-    FragColor = vec4 (getAlbedo(coordsUV), 1.0);
-    Ray ray = TraceRay(TexCoords);
-
-    vec3  fragPos         = getPosition(coordsUV);
-    vec3  fragNormal      = getNormal(coordsUV);
-    vec3  fragAlbedo      = getAlbedo(coordsUV);
-    float fragMetalicness = getMetalicness(coordsUV);
-    float fragRoughness   = getRoughness(coordsUV);
+vec3 getRendered(vec2 coords) {
+	vec3  fragPos         = getPosition(coords);
+    vec3  fragNormal      = getNormal(coords);
+    vec3  fragAlbedo      = getAlbedo(coords);
+    float fragMetalicness = getMetalicness(coords);
+    float fragRoughness   = getRoughness(coords);
 
 	vec3 r = vec3(0);
 	for(int i=0; i<nb_lightsourcesDir; i++) {
@@ -215,6 +214,32 @@ void main () {
 
 		r += get_r(fragPos, fragNormal, lightDirection, Li, lightsourcesPoint[i].color, fragAlbedo, fragRoughness, fragMetalicness);
 	}
+
+	return r;
+}
+
+float reflectionSpecularFalloffExponent = 3.0;
+void main () {
+	vec3 RENDER = getRendered(TexCoords);
+	float SSR_multiplier = 0.0f;
+	vec3 SSR = vec3(0);
+
+    Ray ray = TraceRay(TexCoords);
+
+    float fragMetalicness = getMetalicness(TexCoords);
+    vec3 fragNormal = getNormal(TexCoords);
+    vec3 fragAlbedo = getAlbedo(TexCoords);
+
+	if(ray.hit == true) {
+		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - ray.uv));
+		float screenEdgefactor = clamp(1.0 - (dCoords.x + dCoords.y), 0.0f, 1.0f);
+		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent) * screenEdgefactor * length(ray.d);
+		SSR_multiplier = clamp(multiplier, 0.0f, 0.9f);
+		SSR = getRendered(ray.uv);
+	}
+
+	vec3 r = RENDER + (SSR - RENDER) * SSR_multiplier;
+	//if (ray.hit) r = vec3(1,0,0);
 	
     
     if (diagnostic == 1)
@@ -224,8 +249,8 @@ void main () {
 	else if(diagnostic == 3)
 		FragColor = vec4(fragAlbedo, 1);
 	else if(diagnostic == 4) {
-		int xx = int(coordsUV[0] * 10.0f);
-		int yy = int(coordsUV[1] * 10.0f);
+		int xx = int(TexCoords[0] * 10.0f);
+		int yy = int(TexCoords[1] * 10.0f);
 		if((xx + yy) % 2 == 0)
 			FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		else if((xx + yy) % 2 == 1)
