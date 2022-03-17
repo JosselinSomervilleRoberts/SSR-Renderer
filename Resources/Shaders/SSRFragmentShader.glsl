@@ -38,8 +38,9 @@ struct Ray
 	vec3 viewNormal;
 	vec3 d;
 	vec3 currPos;
-	int steps;
+	float steps;
 	vec2 uv;
+	float diff_depth;
 
 	vec3 out_col;
 	bool hit;
@@ -54,7 +55,9 @@ vec3  getAlbedo(vec2 coords);
 float getRoughness(vec2 coords);
 float getMetalicness(vec2 coords);
 vec2  getUV(vec3 pos);
+Ray TraceRay2(vec2 uv, int nbSteps, float start, float end);
 Ray TraceRay(vec2 uv);
+Ray BinarySearch(Ray ray, float stepSize);
 
 // Shading
 vec3 get_fd(vec3 albedo);
@@ -64,69 +67,105 @@ vec3 get_r(vec3 position, vec3 normal, vec3 lightDirection, float lightIntensity
 float minVec3(vec3 v) { return min(v.x, min(v.y, v.z)); }
 float maxVec3(vec3 v) { return max(v.x, max(v.y, v.z)); }
 
-Ray TraceRay(vec2 uv);
-Ray BinarySearch(Ray ray, float depth);
 
-int maxSteps = 60;
-int binarySearchSteps = 5;
+int maxSteps = 40;
+int binarySearchSteps = 10;
 float SSRinitialStep = 0.01f;
-float SSRstep = 0.05f;
+float SSRstep = 0.1f;
 
 
 Ray TraceRay(vec2 uv) {
-	Ray ray;
+	return TraceRay2(uv, maxSteps, SSRinitialStep, SSRinitialStep + SSRstep * (maxSteps - 1));
+}
+
+Ray TraceRay2(vec2 uv, int nbSteps, float start, float end) {
+	// First compute the step
+	float stepSize = (end - start) / (nbSteps - 1);
 
     // Everything is computed in the view space
+	Ray ray;
     ray.o = getPosition(uv);
     vec3 V = normalize(ray.o); // Frag pos - camera (and camera = (0,0,0) in camera space
     ray.viewNormal = normalize(getNormal(uv));
     ray.d = normalize(reflect(V, ray.viewNormal));
 
-	// Ray march in screen space.
+	// iniate ray march
     ray.out_col = vec3(0.0);
 	ray.hit = false;
 	ray.steps = 0;
-	ray.currPos = ray.o + ray.d * SSRinitialStep;
+	ray.currPos = ray.o + ray.d * start;
 
-	while(ray.steps < maxSteps)
+	// Instantiate variables
+	float rayDepth;
+	vec2 pixelUV;
+	float pixelDepth;
+	float prev_diff_depth = 0;
+	bool resized = false;
+	float stepIncrease = 1;
+	int countResized = 0;
+	int countResizedMax = 10;
+
+
+	while(ray.steps < nbSteps)
 	{
+		if(resized) {
+			countResized++;
+			if(countResized > countResizedMax) {
+				resized = false;
+				stepIncrease *= countResizedMax;
+			}
+		}
+
 		// Advance in the ray
-		ray.currPos += ray.d * SSRstep;
-		ray.steps++;
-		float rayDepth = length(ray.currPos);
+		ray.currPos += ray.d * stepSize * stepIncrease;
+		ray.steps += stepIncrease;
+		rayDepth = length(ray.currPos);
 
 		// Get the depth
-		vec2 pixelUV = getUV(ray.currPos);
-		float pixelDepth = getDepth(pixelUV);
+		pixelUV = getUV(ray.currPos);
+		pixelDepth = getDepth(pixelUV);
 
-		if(abs(pixelDepth - rayDepth) < 0.5f * SSRstep) {
-			if(diagnostic == 7) ray = BinarySearch(ray, pixelDepth);
-			ray.uv = getUV(ray.currPos);
-			ray.out_col = getAlbedo(ray.uv);
-			ray.hit = true;
-			return ray;
-		}
+		ray.diff_depth = pixelDepth - rayDepth;
+
+		if(abs(ray.diff_depth) < 2.0f * stepSize * stepIncrease) {
+			if(diagnostic == 7) ray = BinarySearch(ray, stepSize);
+			if(abs(ray.diff_depth) < 0.2f * stepSize * stepIncrease) {
+				ray.uv = getUV(ray.currPos);
+				ray.out_col = getAlbedo(ray.uv);
+				ray.hit = true;
+				return ray;
+			}
+		} /*
+		else if((resized == false) &&(diagnostic == 7) && (diff_depth * prev_diff_depth < -0.01f)) {
+			resized = true;
+			ray.currPos -= ray.d * stepSize * stepIncrease;
+			ray.steps -= stepIncrease;
+			stepIncrease /= float(countResizedMax);
+			countResized = 0;
+		}*/
+		else
+			prev_diff_depth = ray.diff_depth;
 	}
 
     return ray;
 }
 
-Ray BinarySearch(Ray ray, float depth) {
-	float coeff = SSRstep;
-	float dDepth;
+Ray BinarySearch(Ray ray, float stepSize) {
 	float rayDepth;
+	vec2 pixelUV;
+	float pixelDepth;
 
 	for (int i=0; i<binarySearchSteps; i++) {
-		coeff *= 0.5f;
+		stepSize *= 0.5f;
 		rayDepth = length(ray.currPos);
-		vec2 pixelUV = getUV(ray.currPos);
-		float pixelDepth = getDepth(pixelUV);
-		dDepth = pixelDepth - rayDepth;
+		pixelUV = getUV(ray.currPos);
+		pixelDepth = getDepth(pixelUV);
+		ray.diff_depth = pixelDepth - rayDepth;
 
-		if (dDepth > 0.0f)
-			ray.currPos += ray.d * coeff;
+		if (ray.diff_depth > 0.0f)
+			ray.currPos += ray.d * stepSize;
 		else
-			ray.currPos -= ray.d * coeff;
+			ray.currPos -= ray.d * stepSize;
 	}
 
 	return ray;
