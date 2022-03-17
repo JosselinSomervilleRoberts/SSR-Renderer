@@ -92,7 +92,8 @@ void printHelp () {
 		      + "\t* F3: albedo\n"
 		      + "\t* F4: tex coordinates\n"
 		      + "\t* F5: (SSR) reflected\n"
-		      + "\t* F6: (SSR) reflect hit\n");
+		      + "\t* F6: (SSR) reflect hit\n"
+		      + "\t* F7: (SSR) disable binary search\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.

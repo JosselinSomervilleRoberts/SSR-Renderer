@@ -73,7 +73,7 @@ protected:
 
     unsigned int quadVAO = 0;
     unsigned int quadVBO;
-    unsigned int gPosition, gNormal, gAlbedoSpec;
+    unsigned int gPosition, gNormal, gAlbedoSpec, gRendered;
     unsigned int gBuffer;
 
 	std::shared_ptr<ShaderProgram> shaderFirstPass; // A GPU program contains at least a vertex shader and a fragment shader
