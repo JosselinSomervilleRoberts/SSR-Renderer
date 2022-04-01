@@ -198,7 +198,6 @@ void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr, int diagnostic) {
 
         // Set up matrices
         shaderFirstPass->use();
-		setLights(shaderFirstPass, scenePtr);
         glm::mat4 projectionMatrix = scenePtr->camera()->computeProjectionMatrix ();
 		shaderFirstPass->set ("projectionMat", projectionMatrix); // Compute the projection matrix of the camera and pass it to the GPU program
 		glm::mat4 viewMatrix = scenePtr->camera()->computeViewMatrix ();
@@ -232,6 +231,8 @@ void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr, int diagnostic) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderSecondPass->use();
+		setLights(shaderSecondPass, scenePtr);
+		shaderSecondPass->set ("extent", scenePtr->getExtent());
 		shaderSecondPass->set ("diagnostic", diagnostic);
 		shaderSecondPass->set ("projectionMat", projectionMatrix); // Compute the projection matrix of the camera and pass it to the GPU program
         shaderSecondPass->set ("normalMat", normalMatrix);

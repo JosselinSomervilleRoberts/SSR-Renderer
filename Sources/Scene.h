@@ -61,6 +61,10 @@ public:
 	inline const std::shared_ptr<LightSourcePoint> lightSourcePoint (size_t index) const { return m_lightSourcesPoint[index]; }
 	inline std::shared_ptr<LightSourcePoint> lightSourcePoint (size_t index) { return m_lightSourcesPoint[index]; }
 
+	// Extent
+	inline void setExtent(float extent_) { extent = extent_; }
+	inline float getExtent() { return extent; }
+
 	inline void clear () {
 		m_camera.reset ();
 		m_meshes.clear ();
@@ -74,6 +78,7 @@ private:
 	std::vector<std::shared_ptr<Mesh> > m_meshes;
 	std::vector<std::shared_ptr<Material> > m_materials;
 	std::unordered_map<size_t, size_t> m_mesh2material;
+	float extent = 1.0f;
 
 	// Lights
 	std::vector<std::shared_ptr<LightSourceDir> > m_lightSourcesDir;

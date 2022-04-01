@@ -1,34 +1,62 @@
 #version 450 core
+#define PI 3.14159
 
 uniform int diagnostic = 1;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
-uniform sampler2D gRendered;
 uniform mat4 projectionMat, normalMat, modelViewMat;
+uniform float extent;
 in vec2 TexCoords;
 
 out vec4 FragColor;
 
+// Lights
+struct LightSourceDir {
+	vec3 direction;
+	float intensity;
+	vec3 color;
+};
+uniform LightSourceDir lightsourcesDir[8];
+uniform int nb_lightsourcesDir;
 
 
+struct LightSourcePoint {
+	vec3 position;
+	float intensity;
+	vec3 color;
+	float a_c;
+    float a_l;
+    float a_q;
+};
+uniform LightSourcePoint lightsourcesPoint[8];
+uniform int nb_lightsourcesPoint;
 
+// Ray structure
 struct Ray
 {
-	vec3 o;
+	// Definition of ray
+	vec3 origin;
 	vec3 viewNormal;
-	vec3 d;
-	vec3 currPos;
-	float steps;
-	vec2 uv;
-	float diff_depth;
+	vec3 direction;
+	vec3 reflected;
 
+	// To march in 3D
+	vec3 currPos;
+	vec3 increment;
+
+	// To march in texture
+	vec2 currPosUV;
+	vec2 incrementUV;
+	
+	// Rasy status
+	int steps;
 	vec3 out_col;
 	bool hit;
 };
 
 
-// SSR
+// Helpers for SSR
 float getDepth(vec2 coords);
 vec3  getPosition(vec2 coords);
 vec3  getNormal(vec2 coords);
@@ -36,145 +64,29 @@ vec3  getAlbedo(vec2 coords);
 float getRoughness(vec2 coords);
 float getMetalicness(vec2 coords);
 vec2  getUV(vec3 pos);
-Ray TraceRay2(vec2 uv, int nbSteps, float start, float end);
-Ray TraceRay(vec2 uv);
-Ray BinarySearch(Ray ray, float stepSize);
 
 // Shading
 vec3 get_fd(vec3 albedo);
 vec3 get_fs(vec3 w0, vec3 wi, vec3 wh, vec3 n, vec3 albedo, float roughness, float metalicness);
 vec3 get_r(vec3 position, vec3 normal, vec3 lightDirection, float lightIntensity, vec3 lightColor, vec3 albedo, float roughness, float metalicness);
+vec3 getShading(vec3 fragPos, vec3 fragNormal, vec3 fragAlbedo, float fragRoughness, float fragMetalicness);
+vec3 getRendered(vec2 coords);
+vec3 SSR(vec2 texCoord, vec3 fragRendered);
 
-float minVec3(vec3 v) { return min(v.x, min(v.y, v.z)); }
-float maxVec3(vec3 v) { return max(v.x, max(v.y, v.z)); }
-
-
-int maxSteps = 40;
-int binarySearchSteps = 5;
-float SSRinitialStep = 0.01f;
-float SSRstep = 0.1f;
-
-
-Ray TraceRay(vec2 uv) {
-	return TraceRay2(uv, maxSteps, SSRinitialStep, SSRinitialStep + SSRstep * (maxSteps - 1));
-}
-
-Ray TraceRay2(vec2 uv, int nbSteps, float start, float end) {
-	// First compute the step
-	float stepSize = (end - start) / (nbSteps - 1);
-
-    // Everything is computed in the view space
-	Ray ray;
-    ray.o = getPosition(uv);
-    vec3 V = normalize(ray.o); // Frag pos - camera (and camera = (0,0,0) in camera space
-    ray.viewNormal = normalize(getNormal(uv));
-    ray.d = normalize(reflect(V, ray.viewNormal));
-
-	// iniate ray march
-    ray.out_col = vec3(0.0);
-	ray.hit = false;
-	ray.steps = 0;
-	ray.currPos = ray.o + ray.d * start;
-
-	// Instantiate variables
-	float rayDepth;
-	vec2 pixelUV;
-	float pixelDepth;
-	float prev_diff_depth = 0;
-	bool resized = false;
-	float stepIncrease = 1;
-	int countResized = 0;
-	int countResizedMax = 10;
+// Ray Marching functions
+Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture);
+Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool useBinary);
+Ray RayMarch(vec2 texCoord, bool inTexture);
 
 
-	while(ray.steps < nbSteps)
-	{
-		if(resized) {
-			countResized++;
-			if(countResized > countResizedMax) {
-				resized = false;
-				stepIncrease *= countResizedMax;
-			}
-		}
 
-		// Advance in the ray
-		ray.currPos += ray.d * stepSize * stepIncrease;
-		ray.steps += stepIncrease;
-		rayDepth = length(ray.currPos);
 
-		// Get the depth
-		pixelUV = getUV(ray.currPos);
-		pixelDepth = getDepth(pixelUV);
-
-		ray.diff_depth = pixelDepth - rayDepth;
-
-		if(abs(ray.diff_depth) < 2.0f * stepSize * stepIncrease) {
-			if(diagnostic != 7) ray = BinarySearch(ray, stepSize);
-			if(abs(ray.diff_depth) < 0.2f * stepSize * stepIncrease) {
-				ray.uv = getUV(ray.currPos);
-				ray.out_col = getAlbedo(ray.uv);
-				ray.hit = true;
-				return ray;
-			}
-		} /*
-		else if((resized == false) &&(diagnostic == 7) && (diff_depth * prev_diff_depth < -0.01f)) {
-			resized = true;
-			ray.currPos -= ray.d * stepSize * stepIncrease;
-			ray.steps -= stepIncrease;
-			stepIncrease /= float(countResizedMax);
-			countResized = 0;
-		}*/
-		else
-			prev_diff_depth = ray.diff_depth;
-	}
-
-    return ray;
-}
-
-Ray BinarySearch(Ray ray, float stepSize) {
-	float rayDepth;
-	vec2 pixelUV;
-	float pixelDepth;
-
-	for (int i=0; i<binarySearchSteps; i++) {
-		stepSize *= 0.5f;
-		rayDepth = length(ray.currPos);
-		pixelUV = getUV(ray.currPos);
-		pixelDepth = getDepth(pixelUV);
-		ray.diff_depth = pixelDepth - rayDepth;
-
-		if (ray.diff_depth > 0.0f)
-			ray.currPos += ray.d * stepSize;
-		else
-			ray.currPos -= ray.d * stepSize;
-	}
-
-	return ray;
-}
-
-float getDepth(vec2 coords) {
-    return texture2D(gPosition, coords).w; 
-}
-
-vec3 getPosition(vec2 coords) {
-    return texture2D(gPosition, coords).xyz;
-}
-
-vec3 getNormal(vec2 coords) {
-    return texture2D(gNormal, coords).xyz;
-}
-
-vec3 getAlbedo(vec2 coords) {
-    return texture2D(gAlbedoSpec, coords).xyz; 
-}
-
-float getRoughness(vec2 coords) {
-    return texture2D(gNormal, coords).w; 
-}
-
-float getMetalicness(vec2 coords) {
-    return texture2D(gAlbedoSpec, coords).w; 
-}
+float getDepth(vec2 coords)       { return texture2D(gPosition, coords).w; }
+vec3  getPosition(vec2 coords)    { return texture2D(gPosition, coords).xyz; }
+vec3  getNormal(vec2 coords)      { return texture2D(gNormal, coords).xyz; }
+vec3  getAlbedo(vec2 coords)      { return texture2D(gAlbedoSpec, coords).xyz; }
+float getRoughness(vec2 coords)   { return texture2D(gNormal, coords).w; }
+float getMetalicness(vec2 coords) { return texture2D(gAlbedoSpec, coords).w; }
 
 vec2 getUV(vec3 pos) {
     vec4 projectedPos = projectionMat * vec4(pos, 1.0f);
@@ -183,41 +95,240 @@ vec2 getUV(vec3 pos) {
     return projectedPos.xy;
 }
 
+
+vec3 get_fd(vec3 albedo) {
+	return albedo / PI;
+}
+
+vec3 get_fs(vec3 w0, vec3 wi, vec3 wh, vec3 n, vec3 albedo, float roughness, float metalicness) {
+	float alpha = roughness;
+	float alpha2 = pow(alpha, 2);
+		
+	float n_wh2 = pow(max(0., dot(n, wh)), 2);
+	float n_wi = dot(n, wi);
+	float n_w0 = dot(n, w0);
+	float wi_wh = max(0., dot(wi, wh));
+	float D = alpha2 /(PI * pow(1 + (alpha2 - 1) * n_wh2, 2));
+		
+	vec3 F0 = albedo + (vec3(1.) - albedo) * metalicness;
+	vec3 F = F0 - (vec3(1.) - F0) * pow(1. - wi_wh, 5);
+		
+	float G1 = 2 * n_wi/(n_wi+sqrt(alpha2+(1-alpha2)*pow(n_wi,2)));
+	float G2 = 2 * n_w0/(n_w0+sqrt(alpha2+(1-alpha2)*pow(n_w0,2)));
+	float G = G1 * G2;
+		
+	vec3 fs = D*F*G/(4*n_wi*n_w0);
+	return fs;
+}
+
+vec3 get_r(vec3 position, vec3 normal, vec3 lightDirection, float lightIntensity, vec3 lightColor, vec3 albedo, float roughness, float metalicness) {
+	vec3 w0 = - normalize(position);
+	vec3 wi = normalize(lightDirection);
+	vec3 wh = normalize(wi + w0);
+	vec3 n = normalize(normal);
+
+	vec3 fs = get_fs(w0, wi, wh, n, albedo, roughness, metalicness);
+	vec3 fd = get_fd(albedo);
+
+	float scalarProd = max(0.0, dot(n, wi));
+	vec3 luminosity = lightIntensity * lightColor;
+		
+	return luminosity * (fd + fs) * scalarProd;
+}
+
+vec3 getShading(vec3 fragPos, vec3 fragNormal, vec3 fragAlbedo, float fragRoughness, float fragMetalicness) {
+	vec3 r = vec3(0);
+	for(int i=0; i<nb_lightsourcesDir; i++) {
+		vec3 lightDirection = normalize(vec3(normalMat * vec4(lightsourcesDir[i].direction, 1.0)));
+		r += get_r(fragPos, fragNormal, -lightDirection, lightsourcesDir[i].intensity, lightsourcesDir[i].color, fragAlbedo, fragRoughness, fragMetalicness);
+	}
+	
+	for(int i=0; i<nb_lightsourcesPoint; i++) {
+		vec3 lightDirection = vec3(modelViewMat * vec4(lightsourcesPoint[i].position, 1.0)) - fragPos;
+		float d = length(lightDirection);
+		float Li = lightsourcesPoint[i].intensity / (lightsourcesPoint[i].a_c + lightsourcesPoint[i].a_l * d + lightsourcesPoint[i].a_q *d*d);
+
+		r += get_r(fragPos, fragNormal, lightDirection, Li, lightsourcesPoint[i].color, fragAlbedo, fragRoughness, fragMetalicness);
+	}
+
+	return r;
+}
+
 vec3 getRendered(vec2 coords) {
-	return texture2D(gRendered, coords).rgb; 
+	vec3  fragPos         = getPosition(coords);
+    vec3  fragNormal      = getNormal(coords);
+    vec3  fragAlbedo      = getAlbedo(coords);
+    float fragMetalicness = getMetalicness(coords);
+    float fragRoughness   = getRoughness(coords);
+
+	return getShading(fragPos, fragNormal, fragAlbedo, fragRoughness, fragMetalicness);
 }
 
 
-
-
-
+float SSR_distance = 9.0f;
+int SSR_linear_steps = 200;
+int SSR_binary_steps = 5;
+float SSR_thickness = 0.1f;
 float reflectionSpecularFalloffExponent = 3.0;
-void main () {
-	vec3 RENDER = getRendered(TexCoords);
-	float SSR_multiplier = 0.0f;
-	vec3 SSR = vec3(0);
 
-    Ray ray = TraceRay(TexCoords);
+Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
+	float coeff = 1.0f;
+	float viewDistance;
+	float textureDistance;
+	float depth;
+	float steps = ray.steps;
 
-    float fragMetalicness = getMetalicness(TexCoords);
-    vec3 fragNormal = getNormal(TexCoords);
-    vec3 fragAlbedo = getAlbedo(TexCoords);
+	for (int i=0; i<SSR_binary_steps; i++) {
+		coeff *= 0.5f;
+		
+		// Computes depth
+        textureDistance = getPosition(ray.currPosUV).z;
+        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, steps / (SSR_linear_steps - 1.0));
+        depth = textureDistance - viewDistance;
 
-	if(ray.hit == true) {
-		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - ray.uv));
-		float screenEdgefactor = clamp(1.0 - (dCoords.x + dCoords.y), 0.0f, 1.0f);
-		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent) * screenEdgefactor * length(ray.d);
-		SSR_multiplier = clamp(multiplier, 0.0f, 0.9f);
-		SSR = getRendered(ray.uv);
+
+		float dir = 1.0f;
+		steps += coeff;
+		if(depth <= 0.0f) {
+			dir = - 1.0f;
+			steps -= 2* coeff;
+		}
+
+		if (inTexture == true) {
+			ray.currPosUV += coeff * dir * ray.incrementUV;
+		}
+		else {
+			ray.currPos += coeff * dir * ray.increment;
+			ray.currPosUV = getUV(ray.currPos);
+		}
+		
+		// If UV is out of texture
+        if (ray.currPosUV.x > 1. || ray.currPosUV.x < 0 || ray.currPosUV.y > 1. || ray.currPosUV.y < 0) return ray;
 	}
 
-	vec3 r = RENDER + (SSR - RENDER) * SSR_multiplier;
-	//if (ray.hit) r = vec3(1,0,0);
+	return ray;
+}
+
+
+Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool useBinary) {
+	// Declare variables in advance
+	float textureDistance;
+    float viewDistance;
+    float depth;
+    float diff_normal;
+
+	// Ray march
+	while(ray.steps < SSR_linear_steps)
+	{
+		ray.steps++;
+		if (inTexture == true) {
+			ray.currPosUV += ray.incrementUV;
+		}
+		else {
+			ray.currPos += ray.increment;
+			ray.currPosUV = getUV(ray.currPos);
+		}
+
+		// If UV is out of texture
+        if (ray.currPosUV.x > 1. || ray.currPosUV.x < 0 || ray.currPosUV.y > 1. || ray.currPosUV.y < 0) return ray;
+
+		// Computes depth
+        textureDistance = getPosition(ray.currPosUV).z;
+        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, ray.steps/(SSR_linear_steps-1.0));
+        depth = textureDistance - viewDistance;
+        diff_normal = distance(ray.viewNormal, getNormal(ray.currPosUV));
+
+        if ( (abs(depth) < SSR_thickness) && (diff_normal > 0.1f)){
+			if(useBinary) ray = BinarySearch(ray, startView, endView, inTexture);
+
+            vec3  reflectionPosFrom  = normalize(ray.origin);
+            ray.reflected    = normalize(reflect(getNormal(ray.currPosUV), ray.viewNormal));
+            vec3  reflectedAlbedo    = getAlbedo(ray.currPosUV);
+            float reflectedRoughness = getRoughness(ray.currPosUV);
+            float reflectedMetallic  = getMetalicness(ray.currPosUV);
+            ray.out_col = getShading (reflectionPosFrom, ray.reflected, reflectedAlbedo, reflectedRoughness, reflectedMetallic);
+			ray.hit = true;
+            return ray;
+        }
+    }
+
+	return ray;
+}
+
+Ray RayMarch(vec2 texCoord, bool inTexture)
+{
+	// First let's check that we need to compute a ray march
+	Ray ray;
+	ray.hit = false;
+	float fragMetalicness = getMetalicness(texCoord);
+	if (fragMetalicness < 0.05f) return ray;
+
+    // Everything is computed in the view space
+	ray.origin = getPosition(texCoord);
+	vec3 V = normalize(ray.origin);
+	ray.viewNormal = normalize(getNormal(texCoord));
+	ray.direction  = normalize(reflect(V, ray.viewNormal));
+
+	// Iniate ray march
+	ray.out_col = vec3(0.0);
+	ray.steps = 0;
+
+	// Compute ray step in view space
+    vec3 startView = ray.origin;
+    vec3 endView   = ray.origin + (ray.direction * SSR_distance * extent);
+    if ((diagnostic != 8) && (endView.z > 0.0)) endView = ray.origin + (0.0 - ray.origin.z) / ray.direction.z * ray.direction;
+	ray.increment  = (endView - startView) / float(SSR_linear_steps);
+	ray.currPos = startView;
+
+	// Compute ray step in texture
+    vec2 startFragUV = getUV(startView);
+    vec2 endFragUV   = getUV(endView);
+	ray.incrementUV = (endFragUV - startFragUV) / float(SSR_linear_steps);
+	ray.currPosUV = startFragUV;
+
+    // Ray march
+	return LinearSearch(ray, startView, endView, inTexture, (diagnostic==7));
+}
+
+vec3 SSR(vec2 texCoord, vec3 fragRendered) {
+	float SSR_multiplier = 0.0f;
+	vec3 SSR_color = vec3(0);
+
+    Ray ray = RayMarch(texCoord, true);
+
+    float fragMetalicness = getMetalicness(texCoord);
+    vec3 fragNormal = getNormal(texCoord);
+    vec3 fragAlbedo = getAlbedo(texCoord);
+
+	if(ray.hit == true) {
+		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - ray.currPosUV));
+		float screenEdgefactor = clamp(1.0 - (dCoords.x + dCoords.y), 0.0f, 1.0f);
+		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent) * screenEdgefactor * ray.reflected.z;
+		SSR_multiplier = clamp(multiplier, 0.0f, 0.9f);
+		SSR_color = ray.out_col;
+	}
+
+	vec3 r = fragRendered + (SSR_color - fragRendered) * SSR_multiplier;
+	
+	if(diagnostic == 5)
+		return ray.direction;
+	else if(diagnostic == 6) {
+		if (ray.hit) return ray.out_col;
+        else return r;
+    }
+	else
+		return r;
+}
+
+void main () {
+	vec3 RENDER     = getRendered(TexCoords);
+	vec3 RENDER_SSR = SSR(TexCoords, RENDER);
+	float fragMetalicness = getMetalicness(TexCoords);
+    vec3 fragNormal = getNormal(TexCoords);
+    vec3 fragAlbedo = getAlbedo(TexCoords);
 	
     
-    if (diagnostic == 1)
-		FragColor = vec4 (r, 1.0);
-	else if(diagnostic == 2)
+	if(diagnostic == 2)
 		FragColor = vec4 (fragNormal, 1.0);
 	else if(diagnostic == 3)
 		FragColor = vec4(fragAlbedo, 1);
@@ -229,27 +340,6 @@ void main () {
 		else if((xx + yy) % 2 == 1)
 			FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if(diagnostic == 5)
-		FragColor = vec4(ray.d, 1);
-	else if(diagnostic == 6) {
-		if (ray.hit) FragColor = vec4(ray.out_col, 1);
-        else FragColor = vec4 (r, 1.0);;
-    }
-	else {
-		FragColor = vec4 (r, 1.0);
-	}
-	/*
-    if (ray.hit) {
-        FragColor  = ray.out_col;  
-    }*/
-
-	/*
-	colorResponse = vec4(vec3(fTexCoord, 0.0f), 1.0f);
-	
-	int xx = int(fTexCoord[0] * 10.0f);
-	int yy = int(fTexCoord[1] * 10.0f);
-	if((xx + yy) % 2 == 0)
-		colorResponse = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	else if((xx + yy) % 2 == 1)
-		colorResponse = vec4(0.0f, 0.0f, 1.0f, 1.0f);*/
+	else
+		FragColor = vec4 (RENDER_SSR, 1.0);
 }

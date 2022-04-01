@@ -93,7 +93,8 @@ void printHelp () {
 		      + "\t* F4: tex coordinates\n"
 		      + "\t* F5: (SSR) reflected\n"
 		      + "\t* F6: (SSR) reflect hit\n"
-		      + "\t* F7: (SSR) disable binary search\n");
+		      + "\t* F7: (SSR) enable binary search\n"
+		      + "\t* F8: (SSR) allow reflection behind camera\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.
@@ -143,6 +144,8 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			diagnostic = 6;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F7) {
 			diagnostic = 7;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F8) {
+			diagnostic = 8;
 		} else {
 			printHelp ();
 		}
@@ -248,7 +251,7 @@ void initScene () {
 	meshPtr->computeBoundingSphere (center, meshScale);
 	meshPtr->computePlanarParameterization();
 	BoundingBox bbox = meshPtr->computeBoundingBox ();
-    auto meshMaterialPtr = std::make_shared<Material> (glm::vec3 (0, 1, 0), 0.3, 0.0);
+    auto meshMaterialPtr = std::make_shared<Material> (glm::vec3 (0.05, 0.05, 0.05), 0.3, 0.2);
     scenePtr->add (meshPtr);
     scenePtr->addMaterial (meshMaterialPtr);
 	scenePtr->setMaterialToMesh (0, 0);
@@ -257,7 +260,8 @@ void initScene () {
 	
 	// Adding a ground adapted to the loaded model
 	std::shared_ptr<Mesh> groundMeshPtr = std::make_shared<Mesh> ();
-	float extent = bbox.size ();
+	float extent = 2 * bbox.size ();
+	std::cout << "EXTENT: " << extent << std::endl;
 	glm::vec3 startP = bbox.center () + glm::vec3 (-extent, -bbox.height()/2.f, -extent);
 	groundMeshPtr->vertexPositions().push_back (startP); 
 	groundMeshPtr->vertexPositions().push_back (startP + glm::vec3 (0.f, 0.f, 2.f*extent));
@@ -266,13 +270,13 @@ void initScene () {
 	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
 	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
 	groundMeshPtr->recomputePerVertexNormals ();
-    auto groundMaterialPtr = std::make_shared<Material> (glm::vec3 (0.6, 0.6, 0.6f), 0.6, 0.6);
+    auto groundMaterialPtr = std::make_shared<Material> (glm::vec3 (0.6, 0.6, 0.6f), 0.9, 0.9);
     scenePtr->add (groundMeshPtr);
     scenePtr->addMaterial (groundMaterialPtr);
 	scenePtr->setMaterialToMesh (1, 1);
 
-	// Adding a wall adapted to the loaded model
 
+	// Adding a wall adapted to the loaded model
 	std::shared_ptr<Mesh> wallMeshPtr = std::make_shared<Mesh> ();
 	startP = bbox.center () + glm::vec3 (-extent, -bbox.height()/2.f, -extent);
 	wallMeshPtr->vertexPositions().push_back (startP); 
@@ -282,7 +286,7 @@ void initScene () {
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
 	wallMeshPtr->recomputePerVertexNormals ();
-    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.3, 0.2);
+    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.3, 0.9);
     scenePtr->add (wallMeshPtr);
     scenePtr->addMaterial (wallMaterialPtr);
 	scenePtr->setMaterialToMesh (2, 2);
@@ -292,11 +296,11 @@ void initScene () {
 	//scenePtr->addLightSource(lightPtr);
 	//auto lightPtr2 = std::make_shared<LightSourcePoint> ();
 	//scenePtr->addLightSource(lightPtr2);
-	float factor = 1;
+	float factor = 2;
 	float distance = 1;
-	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(0.f, -1.f, -1.f)), glm::vec3(1.f, 1.f, 1.f), 0.4f));
-	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(-2.f, -0.5f, 0.f)), glm::vec3(0.2f, 0.6f, 1.f), 0.25f));
-	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(2.f, -0.5f, 0.f)), glm::vec3(1.0f, 0.25f, 0.1f), 0.25f));
+	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(0.f, -1.f, -1.f)), glm::vec3(1.f, 1.f, 1.f), factor*0.4f));
+	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(-2.f, -0.5f, 0.f)), glm::vec3(0.2f, 0.6f, 1.f), factor*0.25f));
+	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(2.f, -0.5f, 0.f)), glm::vec3(1.0f, 0.25f, 0.1f), factor*0.25f));
 
 	// Camera
 	int width, height;
