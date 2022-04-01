@@ -40,3 +40,11 @@ cmake --build Build --config Release
 each time you want to recompile MyRenderer
 
 The resulting binary to use is always the onelocated in the MyRenderer directory, you can safely ignore whatever is generated in the Build directory. 
+
+### SSR
+
+To toggle SSR press tab.
+
+There are many options in SSR, to toggle things on and off such as binary search, edge fading, and more (using F keys). You can also change the number of steps by pressing R and changing the ray thickness by pressing T. 
+<br/>
+Enjoy beautiful renderings with SSR !
