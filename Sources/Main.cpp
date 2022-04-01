@@ -251,6 +251,8 @@ void initScene () {
 	meshPtr->computeBoundingSphere (center, meshScale);
 	meshPtr->computePlanarParameterization();
 	BoundingBox bbox = meshPtr->computeBoundingBox ();
+	float extent = 2 * bbox.size ();
+	meshPtr->setTranslation(glm::vec3(0, -0.2f * extent, 0));
     auto meshMaterialPtr = std::make_shared<Material> (glm::vec3 (0.05, 0.05, 0.05), 0.3, 0.2);
     scenePtr->add (meshPtr);
     scenePtr->addMaterial (meshMaterialPtr);
@@ -260,7 +262,6 @@ void initScene () {
 	
 	// Adding a ground adapted to the loaded model
 	std::shared_ptr<Mesh> groundMeshPtr = std::make_shared<Mesh> ();
-	float extent = 2 * bbox.size ();
 	std::cout << "EXTENT: " << extent << std::endl;
 	glm::vec3 startP = bbox.center () + glm::vec3 (-extent, -bbox.height()/2.f, -extent);
 	groundMeshPtr->vertexPositions().push_back (startP); 
@@ -270,7 +271,7 @@ void initScene () {
 	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
 	groundMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
 	groundMeshPtr->recomputePerVertexNormals ();
-    auto groundMaterialPtr = std::make_shared<Material> (glm::vec3 (0.6, 0.6, 0.6f), 0.9, 0.9);
+    auto groundMaterialPtr = std::make_shared<Material> (glm::vec3 (0.6, 0.6, 0.6f), 0.1f, 0.9);
     scenePtr->add (groundMeshPtr);
     scenePtr->addMaterial (groundMaterialPtr);
 	scenePtr->setMaterialToMesh (1, 1);
@@ -286,7 +287,7 @@ void initScene () {
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
 	wallMeshPtr->recomputePerVertexNormals ();
-    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.3, 0.9);
+    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.1f, 0.4);
     scenePtr->add (wallMeshPtr);
     scenePtr->addMaterial (wallMaterialPtr);
 	scenePtr->setMaterialToMesh (2, 2);
@@ -296,7 +297,7 @@ void initScene () {
 	//scenePtr->addLightSource(lightPtr);
 	//auto lightPtr2 = std::make_shared<LightSourcePoint> ();
 	//scenePtr->addLightSource(lightPtr2);
-	float factor = 2;
+	float factor = 4;
 	float distance = 1;
 	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(0.f, -1.f, -1.f)), glm::vec3(1.f, 1.f, 1.f), factor*0.4f));
 	scenePtr->addLightSource (std::make_shared<LightSourceDir> (distance * normalize (glm::vec3(-2.f, -0.5f, 0.f)), glm::vec3(0.2f, 0.6f, 1.f), factor*0.25f));

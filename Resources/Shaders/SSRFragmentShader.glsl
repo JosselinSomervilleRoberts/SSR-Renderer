@@ -166,8 +166,8 @@ vec3 getRendered(vec2 coords) {
 
 
 float SSR_distance = 9.0f;
-int SSR_linear_steps = 200;
-int SSR_binary_steps = 5;
+int SSR_linear_steps = 500;
+int SSR_binary_steps = 10;
 float SSR_thickness = 0.1f;
 float reflectionSpecularFalloffExponent = 3.0;
 
@@ -182,8 +182,8 @@ Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
 		coeff *= 0.5f;
 		
 		// Computes depth
-        textureDistance = getPosition(ray.currPosUV).z;
-        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, steps / (SSR_linear_steps - 1.0));
+        textureDistance = getDepth(ray.currPosUV);
+        viewDistance = length(ray.currPos);//(startView.z * endView.z) / mix(endView.z, startView.z, steps / (SSR_linear_steps - 1.0));
         depth = textureDistance - viewDistance;
 
 
@@ -231,6 +231,11 @@ Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool use
 
 		// If UV is out of texture
         if (ray.currPosUV.x > 1. || ray.currPosUV.x < 0 || ray.currPosUV.y > 1. || ray.currPosUV.y < 0) return ray;
+
+		// Computes depth
+		// This methods is quite similar but more noisy
+        // textureDistance = getDepth(ray.currPosUV);
+		// viewDistance = length(startView + ray.steps * ray.increment);
 
 		// Computes depth
         textureDistance = getPosition(ray.currPosUV).z;
@@ -290,22 +295,83 @@ Ray RayMarch(vec2 texCoord, bool inTexture)
 	return LinearSearch(ray, startView, endView, inTexture, (diagnostic==7));
 }
 
+// A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
+uint hash( uint x ) {
+    x += ( x << 10u );
+    x ^= ( x >>  6u );
+    x += ( x <<  3u );
+    x ^= ( x >> 11u );
+    x += ( x << 15u );
+    return x;
+}
+
+
+
+// Compound versions of the hashing algorithm I whipped together.
+uint hash( uvec2 v ) { return hash( v.x ^ hash(v.y)                         ); }
+uint hash( uvec3 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z)             ); }
+uint hash( uvec4 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w) ); }
+
+
+
+// Construct a float with half-open range [0:1] using low 23 bits.
+// All zeroes yields 0.0, all ones yields the next smallest representable value below 1.0.
+float floatConstruct( uint m ) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat( m );       // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
+}
+
+
+
+// Pseudo-random value in half-open range [0:1].
+float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
+float random( vec2  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
+
 vec3 SSR(vec2 texCoord, vec3 fragRendered) {
 	float SSR_multiplier = 0.0f;
 	vec3 SSR_color = vec3(0);
 
-    Ray ray = RayMarch(texCoord, true);
+	int alias = 1;
+	if (diagnostic == 8) alias = 16;
+	int nb_hits = 0;
+	float rand = random(texCoord);
+	Ray ray;
+
+	vec3 outCol = vec3(0);
+	vec2 uv = vec2(0);
+	for(int i=0; i<alias; i++) {
+		float dx = random(i) * rand;
+		float dy = random(i+0.5f) * rand;
+		dx *= 0.003f;
+		dy *= 0.003f;
+    	ray = RayMarch(texCoord + vec2(dx, dy), true);
+		if (ray.hit == true) {
+			nb_hits++;
+			outCol += ray.out_col;
+			uv += ray.currPosUV;
+		}
+	}
 
     float fragMetalicness = getMetalicness(texCoord);
     vec3 fragNormal = getNormal(texCoord);
     vec3 fragAlbedo = getAlbedo(texCoord);
 
-	if(ray.hit == true) {
-		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - ray.currPosUV));
+	if(nb_hits > max(0, 0.5f * alias)) {
+		uv /= float(nb_hits);
+		outCol /= float(nb_hits);
+		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - uv));
 		float screenEdgefactor = clamp(1.0 - (dCoords.x + dCoords.y), 0.0f, 1.0f);
 		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent) * screenEdgefactor * ray.reflected.z;
 		SSR_multiplier = clamp(multiplier, 0.0f, 0.9f);
-		SSR_color = ray.out_col;
+		SSR_color = outCol;
 	}
 
 	vec3 r = fragRendered + (SSR_color - fragRendered) * SSR_multiplier;
@@ -313,16 +379,20 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered) {
 	if(diagnostic == 5)
 		return ray.direction;
 	else if(diagnostic == 6) {
-		if (ray.hit) return ray.out_col;
+		if (nb_hits > max(0, 0.5f * alias)) return outCol;
         else return r;
     }
 	else
 		return r;
 }
 
+
+
+
 void main () {
 	vec3 RENDER     = getRendered(TexCoords);
 	vec3 RENDER_SSR = SSR(TexCoords, RENDER);
+
 	float fragMetalicness = getMetalicness(TexCoords);
     vec3 fragNormal = getNormal(TexCoords);
     vec3 fragAlbedo = getAlbedo(TexCoords);

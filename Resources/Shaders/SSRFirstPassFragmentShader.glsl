@@ -28,6 +28,7 @@ void main()
     // store the fragment position vector in the first gbuffer texture
     gPosition.xyz = FragPos;
     gPosition.w   = Depth;
+
     // also store the per-fragment normals into the gbuffer
 	vec3 n = normalize(Normal);
     gNormal.xyz = n;

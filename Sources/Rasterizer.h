@@ -74,8 +74,9 @@ protected:
     unsigned int quadVAO = 0;
     unsigned int quadVBO;
     unsigned int gPosition, gNormal, gAlbedoSpec, gRendered;
-    unsigned int gBuffer;
+    unsigned int gBuffer, gBuffer2;
 
 	std::shared_ptr<ShaderProgram> shaderFirstPass; // A GPU program contains at least a vertex shader and a fragment shader
 	std::shared_ptr<ShaderProgram> shaderSecondPass; // Full screen quad shader program, for displaying 2D color images
+	std::shared_ptr<ShaderProgram> shaderThirdPass; // Full screen quad shader program, for displaying 2D color images
 };
