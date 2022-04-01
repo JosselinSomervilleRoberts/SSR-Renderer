@@ -233,6 +233,17 @@ void Rasterizer::renderSSR (std::shared_ptr<Scene> scenePtr, int diagnostic) {
         shaderSecondPass->use();
 		setLights(shaderSecondPass, scenePtr);
 		shaderSecondPass->set ("extent", scenePtr->getExtent());
+
+		shaderSecondPass->set ("useBinary", this->useBinary);
+		shaderSecondPass->set ("useAntiAlias", this->useAntiAlias);
+		shaderSecondPass->set ("useReflectedShading", this->useReflectedShading);
+		shaderSecondPass->set ("useInTexture", this->useInTexture);
+		shaderSecondPass->set ("allowBehindCamera", this->allowBehindCamera);
+		shaderSecondPass->set ("useScreenEdge", this->useScreenEdge);
+		shaderSecondPass->set ("useDirectionShading", this->useDirectionShading);
+		shaderSecondPass->set ("SSR_linear_steps", this->SSR_linear_steps);
+		shaderSecondPass->set ("SSR_thickness", this->SSR_thickness);
+
 		shaderSecondPass->set ("diagnostic", diagnostic);
 		shaderSecondPass->set ("projectionMat", projectionMatrix); // Compute the projection matrix of the camera and pass it to the GPU program
         shaderSecondPass->set ("normalMat", normalMatrix);

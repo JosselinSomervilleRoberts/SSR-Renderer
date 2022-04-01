@@ -68,6 +68,11 @@ static int diagnostic = 1;
 
 void clear ();
 
+std::string boolTotext(bool b) {
+	if (b) return "On ";
+	else return "Off";
+}
+
 void printHelp () {
 	Console::print (std::string ("Help:\n") 
 			  + "\tMouse commands:\n" 
@@ -86,15 +91,21 @@ void printHelp () {
 		      + "\t* O: enable/disable occlusion in ray tracing\n"
 		      + "\t* P: enable/disable anti-aliasing in ray tracing\n"
 		      + "\n"
-		      + "\n Diagnostic:\n"
-		      + "\t* F1: render\n"
+		      + "\n Diagnostic and SSR:\n"
+		      + "\t* F1: render (SSR: also reset booleans togglers) \n"
 		      + "\t* F2: normal\n"
 		      + "\t* F3: albedo\n"
 		      + "\t* F4: tex coordinates\n"
 		      + "\t* F5: (SSR) reflected\n"
-		      + "\t* F6: (SSR) reflect hit\n"
-		      + "\t* F7: (SSR) enable binary search\n"
-		      + "\t* F8: (SSR) allow reflection behind camera\n");
+		      + "\t* F6: (SSR) " + boolTotext(rasterizerPtr->useReflectedShading) + ": reflected shading\n"
+		      + "\t* F7: (SSR) " + boolTotext(rasterizerPtr->useBinary) + ": binary search\n"
+		      + "\t* F8: (SSR) " + boolTotext(rasterizerPtr->useAntiAlias) + ": Anti-alias\n"
+		      + "\t* F9: (SSR) " + boolTotext(rasterizerPtr->useInTexture) + ": march in texture\n"
+		      + "\t*F10: (SSR) " + boolTotext(rasterizerPtr->allowBehindCamera) + ": allow reflections behind camera\n"
+		      + "\t*F11: (SSR) " + boolTotext(rasterizerPtr->useScreenEdge) + ": (Shading) use screen edge factor\n"
+		      + "\t*  D: (SSR) " + boolTotext(rasterizerPtr->useDirectionShading) + ": (Shading) use reflection direction\n"
+		      + "\t*  R: (SSR) Linear Steps : " + std::to_string(rasterizerPtr->SSR_linear_steps) + "\n"
+		      + "\t*  T: (SSR) Ray thickness: " + std::to_string(rasterizerPtr->SSR_thickness) + "\n");
 }
 
 /// Adjust the ray tracer target resolution and runs it.
@@ -132,6 +143,14 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 			raytrace ();
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F1) {
 			diagnostic = 1;
+			rasterizerPtr->useReflectedShading = true;
+			rasterizerPtr->useBinary = true;
+			rasterizerPtr->useAntiAlias = false;
+			rasterizerPtr->useInTexture = true;
+			rasterizerPtr->allowBehindCamera = false;
+			rasterizerPtr->useScreenEdge = true;
+			rasterizerPtr->useDirectionShading = true;
+			rasterizerPtr->SSR_linear_steps = 500;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F2) {
 			diagnostic = 2;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F3) {
@@ -141,11 +160,36 @@ void keyCallback (GLFWwindow * windowPtr, int key, int scancode, int action, int
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F5) {
 			diagnostic = 5;
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F6) {
-			diagnostic = 6;
+			rasterizerPtr->useReflectedShading = !(rasterizerPtr->useReflectedShading);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F7) {
-			diagnostic = 7;
+			rasterizerPtr->useBinary = !(rasterizerPtr->useBinary);
 		} else if (action == GLFW_PRESS && key == GLFW_KEY_F8) {
-			diagnostic = 8;
+			rasterizerPtr->useAntiAlias = !(rasterizerPtr->useAntiAlias);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F9) {
+			rasterizerPtr->useInTexture = !(rasterizerPtr->useInTexture);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F10) {
+			rasterizerPtr->allowBehindCamera = !(rasterizerPtr->allowBehindCamera);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_F11) {
+			rasterizerPtr->useScreenEdge = !(rasterizerPtr->useScreenEdge);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_D) {
+			rasterizerPtr->useDirectionShading = !(rasterizerPtr->useDirectionShading);
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_R) {
+			if(rasterizerPtr->SSR_linear_steps == 25) rasterizerPtr->SSR_linear_steps = 50;
+			else if(rasterizerPtr->SSR_linear_steps == 50) rasterizerPtr->SSR_linear_steps = 100;
+			else if(rasterizerPtr->SSR_linear_steps == 100) rasterizerPtr->SSR_linear_steps = 250;
+			else if(rasterizerPtr->SSR_linear_steps == 250) rasterizerPtr->SSR_linear_steps = 500;
+			else if(rasterizerPtr->SSR_linear_steps == 500) rasterizerPtr->SSR_linear_steps = 1000;
+			else if(rasterizerPtr->SSR_linear_steps == 1000) rasterizerPtr->SSR_linear_steps = 2500;
+			else if(rasterizerPtr->SSR_linear_steps == 2500) rasterizerPtr->SSR_linear_steps = 25;
+		} else if (action == GLFW_PRESS && key == GLFW_KEY_T) {
+			float EPSILON = 0.001f;
+			if(rasterizerPtr->SSR_thickness <= 0.01 + EPSILON) rasterizerPtr->SSR_thickness = 0.025;
+			else if(rasterizerPtr->SSR_thickness <= 0.025 + EPSILON) rasterizerPtr->SSR_thickness = 0.05;
+			else if(rasterizerPtr->SSR_thickness <= 0.05 + EPSILON) rasterizerPtr->SSR_thickness = 0.1;
+			else if(rasterizerPtr->SSR_thickness <= 0.1 + EPSILON) rasterizerPtr->SSR_thickness = 0.25;
+			else if(rasterizerPtr->SSR_thickness <= 0.25 + EPSILON) rasterizerPtr->SSR_thickness = 0.5;
+			else if(rasterizerPtr->SSR_thickness <= 0.5 + EPSILON) rasterizerPtr->SSR_thickness = 1;
+			else if(rasterizerPtr->SSR_thickness <= 1 + EPSILON) rasterizerPtr->SSR_thickness = 0.01;
 		} else {
 			printHelp ();
 		}
@@ -252,7 +296,8 @@ void initScene () {
 	meshPtr->computePlanarParameterization();
 	BoundingBox bbox = meshPtr->computeBoundingBox ();
 	float extent = 2 * bbox.size ();
-	meshPtr->setTranslation(glm::vec3(0, -0.2f * extent, 0));
+	if (meshFilename.find("sphere") != std::string::npos)
+		meshPtr->setTranslation(glm::vec3(0, -0.2f * extent, 0));
     auto meshMaterialPtr = std::make_shared<Material> (glm::vec3 (0.05, 0.05, 0.05), 0.3, 0.2);
     scenePtr->add (meshPtr);
     scenePtr->addMaterial (meshMaterialPtr);
@@ -287,7 +332,7 @@ void initScene () {
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 1, 2));
 	wallMeshPtr->triangleIndices().push_back (glm::uvec3 (0, 2, 3));
 	wallMeshPtr->recomputePerVertexNormals ();
-    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.1f, 0.4);
+    auto wallMaterialPtr = std::make_shared<Material> (glm::vec3 (0.9, 0.5, 0.3f), 0.1f, 0.5f);
     scenePtr->add (wallMeshPtr);
     scenePtr->addMaterial (wallMaterialPtr);
 	scenePtr->setMaterialToMesh (2, 2);
@@ -372,7 +417,7 @@ void parseCommandLine (int argc, char ** argv) {
 		usage (argv[0]);
 	fs::path appPath = argv[0];
 	basePath = appPath.parent_path().string(); 
-	meshFilename = basePath + "/" + (argc >= 2 ? argv[1] : DEFAULT_MESH_FILENAME);
+	meshFilename = basePath + "/" + (argc >= 2 ? argv[1] : ".\\Resources\\Models\\sphere_high_res.off");
 }
 
 int main (int argc, char ** argv) {

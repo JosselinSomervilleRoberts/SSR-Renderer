@@ -22,7 +22,7 @@ RayTracer::~RayTracer() {
 
 void RayTracer::init (const std::shared_ptr<Scene> scenePtr) {
 	std::cout << "BVH initiation...";
-	bvh.init(scenePtr);
+	//bvh.init(scenePtr);
 	std::cout << " done" << std::endl;
 }
 

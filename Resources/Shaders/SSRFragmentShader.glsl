@@ -6,9 +6,17 @@ uniform sampler2D gAlbedoSpec;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform mat4 projectionMat, normalMat, modelViewMat;
-uniform float extent;
-in vec2 TexCoords;
 
+uniform float extent;
+uniform bool useBinary;
+uniform bool useAntiAlias;
+uniform bool useReflectedShading;
+uniform bool useInTexture;
+uniform bool allowBehindCamera;
+uniform bool useScreenEdge;
+uniform bool useDirectionShading;
+
+in vec2 TexCoords;
 out vec4 FragColor;
 
 // Lights
@@ -75,7 +83,7 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered);
 
 // Ray Marching functions
 Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture);
-Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool useBinary);
+Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture);
 Ray RayMarch(vec2 texCoord, bool inTexture);
 
 
@@ -166,9 +174,9 @@ vec3 getRendered(vec2 coords) {
 
 
 float SSR_distance = 9.0f;
-int SSR_linear_steps = 500;
+uniform int SSR_linear_steps = 100;
 int SSR_binary_steps = 10;
-float SSR_thickness = 0.1f;
+uniform float SSR_thickness = 0.1f;
 float reflectionSpecularFalloffExponent = 3.0;
 
 Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
@@ -182,14 +190,14 @@ Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
 		coeff *= 0.5f;
 		
 		// Computes depth
-        textureDistance = getDepth(ray.currPosUV);
-        viewDistance = length(ray.currPos);//(startView.z * endView.z) / mix(endView.z, startView.z, steps / (SSR_linear_steps - 1.0));
+        textureDistance = getPosition(ray.currPosUV).z;
+        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, steps / float(SSR_linear_steps));
         depth = textureDistance - viewDistance;
 
 
 		float dir = 1.0f;
 		steps += coeff;
-		if(depth <= 0.0f) {
+		if(depth >= 0.0f) {
 			dir = - 1.0f;
 			steps -= 2* coeff;
 		}
@@ -210,7 +218,7 @@ Ray BinarySearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
 }
 
 
-Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool useBinary) {
+Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture) {
 	// Declare variables in advance
 	float textureDistance;
     float viewDistance;
@@ -239,7 +247,7 @@ Ray LinearSearch(Ray ray, vec3 startView, vec3 endView, bool inTexture, bool use
 
 		// Computes depth
         textureDistance = getPosition(ray.currPosUV).z;
-        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, ray.steps/(SSR_linear_steps-1.0));
+        viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, ray.steps/ float(SSR_linear_steps));
         depth = textureDistance - viewDistance;
         diff_normal = distance(ray.viewNormal, getNormal(ray.currPosUV));
 
@@ -281,7 +289,7 @@ Ray RayMarch(vec2 texCoord, bool inTexture)
 	// Compute ray step in view space
     vec3 startView = ray.origin;
     vec3 endView   = ray.origin + (ray.direction * SSR_distance * extent);
-    if ((diagnostic != 8) && (endView.z > 0.0)) endView = ray.origin + (0.0 - ray.origin.z) / ray.direction.z * ray.direction;
+    if (!(allowBehindCamera) && (endView.z > 0.0)) endView = ray.origin + (0.0 - ray.origin.z) / ray.direction.z * ray.direction;
 	ray.increment  = (endView - startView) / float(SSR_linear_steps);
 	ray.currPos = startView;
 
@@ -292,7 +300,7 @@ Ray RayMarch(vec2 texCoord, bool inTexture)
 	ray.currPosUV = startFragUV;
 
     // Ray march
-	return LinearSearch(ray, startView, endView, inTexture, (diagnostic==7));
+	return LinearSearch(ray, startView, endView, inTexture);
 }
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
@@ -340,7 +348,7 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered) {
 	vec3 SSR_color = vec3(0);
 
 	int alias = 1;
-	if (diagnostic == 8) alias = 16;
+	if (useAntiAlias) alias = 8;
 	int nb_hits = 0;
 	float rand = random(texCoord);
 	Ray ray;
@@ -352,7 +360,7 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered) {
 		float dy = random(i+0.5f) * rand;
 		dx *= 0.003f;
 		dy *= 0.003f;
-    	ray = RayMarch(texCoord + vec2(dx, dy), true);
+    	ray = RayMarch(texCoord + vec2(dx, dy), useInTexture);
 		if (ray.hit == true) {
 			nb_hits++;
 			outCol += ray.out_col;
@@ -364,12 +372,18 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered) {
     vec3 fragNormal = getNormal(texCoord);
     vec3 fragAlbedo = getAlbedo(texCoord);
 
-	if(nb_hits > max(0, 0.5f * alias)) {
+	bool hit = false;
+	if (nb_hits > max(0, 0.5f * alias)) hit = true;
+	if (useDirectionShading && (ray.reflected.z <= 0)) hit = false;
+
+	if (hit) {
 		uv /= float(nb_hits);
 		outCol /= float(nb_hits);
 		vec2 dCoords = smoothstep(0.2, 0.6, abs(vec2(0.5, 0.5) - uv));
 		float screenEdgefactor = clamp(1.0 - (dCoords.x + dCoords.y), 0.0f, 1.0f);
-		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent) * screenEdgefactor * ray.reflected.z;
+		float multiplier = pow(fragMetalicness, reflectionSpecularFalloffExponent);
+		if (useScreenEdge) multiplier *= screenEdgefactor;
+		if (useDirectionShading) multiplier *= ray.reflected.z;
 		SSR_multiplier = clamp(multiplier, 0.0f, 0.9f);
 		SSR_color = outCol;
 	}
@@ -378,8 +392,8 @@ vec3 SSR(vec2 texCoord, vec3 fragRendered) {
 	
 	if(diagnostic == 5)
 		return ray.direction;
-	else if(diagnostic == 6) {
-		if (nb_hits > max(0, 0.5f * alias)) return outCol;
+	else if(!(useReflectedShading)) {
+		if (hit) return outCol;
         else return r;
     }
 	else

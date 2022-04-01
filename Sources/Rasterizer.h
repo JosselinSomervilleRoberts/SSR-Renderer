@@ -46,6 +46,18 @@ public:
 	void genGPUBufferSSR ();
 	void initScreenQuadSSR ();
 
+public:
+	// SSR uniforms
+	bool useBinary = true;
+	bool useAntiAlias = false;
+	bool useReflectedShading = true;
+	bool useInTexture = true;
+	bool allowBehindCamera = false;
+	bool useScreenEdge = true;
+	bool useDirectionShading = true;
+	int SSR_linear_steps = 500;
+	float SSR_thickness = 0.1f;
+
 
 protected:
 	GLuint genGPUBuffer (size_t elementSize, size_t numElements, const void * data);
