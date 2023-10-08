@@ -2,7 +2,9 @@ Screen Space Reflections + MyRenderer
 Base code for INF584 "Image Synthesis" Assignments
 ==================================================
 
-Visit: https://josselinsomervilleroberts.github.io/ to see more details (images of the result, small description and report)
+To learn more about the project and see images of the result, please visit: https://josselinsomervilleroberts.github.io/
+
+![image](https://github.com/JosselinSomervilleRoberts/JosselinSomervilleRoberts.github.io/blob/main/images/projects/ssr/final_ssr.PNG)
 
 Original Author: Tamy Boubekeur (tamy.boubekeur@telecom-paris.fr)
 
