@@ -1,8 +1,10 @@
-MyRenderer
+Screen Space Reflections + MyRenderer
 Base code for INF584 "Image Synthesis" Assignments
 ==================================================
 
-Author: Tamy Boubekeur (tamy.boubekeur@telecom-paris.fr)
+Visit: https://josselinsomervilleroberts.github.io/ to see more details (images of the result, small description and report)
+
+Original Author: Tamy Boubekeur (tamy.boubekeur@telecom-paris.fr)
 
 ### Building
 
