@@ -4,7 +4,7 @@ Base code for INF584 "Image Synthesis" Assignments
 
 To learn more about the project and see images of the result, please visit: https://josselinsomervilleroberts.github.io/
 
-![image](https://github.com/JosselinSomervilleRoberts/JosselinSomervilleRoberts.github.io/blob/main/images/projects/ssr/final_ssr.PNG)
+![image](https://github.com/JosselinSomervilleRoberts/JosselinSomervilleRoberts.github.io/blob/main/images/projects/ssr/final_ssr.png)
 
 Original Author: Tamy Boubekeur (tamy.boubekeur@telecom-paris.fr)
 
